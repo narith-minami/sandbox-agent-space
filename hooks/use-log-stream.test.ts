@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLogStream } from './use-log-stream';
 import { createWrapper } from '@/test/react-test-utils';
 
@@ -79,8 +79,10 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    // Simulate connection open
-    eventSourceInstances[0].simulateOpen();
+    // Simulate connection open wrapped in act
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
     await waitFor(() => {
       expect(result.current.isConnected).toBe(true);
@@ -92,13 +94,17 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
-    eventSourceInstances[0].simulateMessage({
-      type: 'log',
-      timestamp: '2024-01-01T00:00:00Z',
-      level: 'info',
-      message: 'Test message',
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'log',
+        timestamp: '2024-01-01T00:00:00Z',
+        level: 'info',
+        message: 'Test message',
+      });
     });
 
     await waitFor(() => {
@@ -117,20 +123,26 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
-
-    eventSourceInstances[0].simulateMessage({
-      type: 'log',
-      timestamp: '2024-01-01T00:00:00Z',
-      level: 'info',
-      message: 'First message',
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
     });
 
-    eventSourceInstances[0].simulateMessage({
-      type: 'log',
-      timestamp: '2024-01-01T00:00:01Z',
-      level: 'error',
-      message: 'Second message',
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'log',
+        timestamp: '2024-01-01T00:00:00Z',
+        level: 'info',
+        message: 'First message',
+      });
+    });
+
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'log',
+        timestamp: '2024-01-01T00:00:01Z',
+        level: 'error',
+        message: 'Second message',
+      });
     });
 
     await waitFor(() => {
@@ -146,10 +158,14 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
-    eventSourceInstances[0].simulateMessage({
-      type: 'complete',
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'complete',
+      });
     });
 
     await waitFor(() => {
@@ -165,11 +181,15 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
-    eventSourceInstances[0].simulateMessage({
-      type: 'error',
-      message: 'Something went wrong',
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'error',
+        message: 'Something went wrong',
+      });
     });
 
     await waitFor(() => {
@@ -185,10 +205,14 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
     // Simulate connection error
-    eventSourceInstances[0].simulateError();
+    await act(async () => {
+      eventSourceInstances[0].simulateError();
+    });
 
     await waitFor(() => {
       expect(result.current.isConnected).toBe(false);
@@ -205,12 +229,14 @@ describe('useLogStream', () => {
       }
     );
 
-    eventSourceInstances[0].simulateOpen();
-    eventSourceInstances[0].simulateMessage({
-      type: 'log',
-      timestamp: '2024-01-01T00:00:00Z',
-      level: 'info',
-      message: 'Test message',
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+      eventSourceInstances[0].simulateMessage({
+        type: 'log',
+        timestamp: '2024-01-01T00:00:00Z',
+        level: 'info',
+        message: 'Test message',
+      });
     });
 
     await waitFor(() => {
@@ -218,7 +244,9 @@ describe('useLogStream', () => {
     });
 
     // Change sessionId to null
-    rerender({ sessionId: null });
+    await act(async () => {
+      rerender({ sessionId: null });
+    });
 
     await waitFor(() => {
       expect(result.current.logs).toHaveLength(0);
@@ -233,8 +261,10 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateMessage({
-      type: 'connected',
+    await act(async () => {
+      eventSourceInstances[0].simulateMessage({
+        type: 'connected',
+      });
     });
 
     await waitFor(() => {
@@ -249,12 +279,16 @@ describe('useLogStream', () => {
       wrapper: createWrapper(),
     });
 
-    eventSourceInstances[0].simulateOpen();
+    await act(async () => {
+      eventSourceInstances[0].simulateOpen();
+    });
 
-    // Simulate invalid JSON
-    if (eventSourceInstances[0].onmessage) {
-      eventSourceInstances[0].onmessage({ data: 'invalid json' });
-    }
+    // Simulate invalid JSON wrapped in act
+    await act(async () => {
+      if (eventSourceInstances[0].onmessage) {
+        eventSourceInstances[0].onmessage({ data: 'invalid json' });
+      }
+    });
 
     // Should not throw, just log error
     await waitFor(() => {
