@@ -1,0 +1,140 @@
+import { z } from 'zod';
+
+// URL validation helpers
+const isValidUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isGistUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'gist.githubusercontent.com' || 
+           parsed.hostname === 'gist.github.com';
+  } catch {
+    return false;
+  }
+};
+
+const isGitHubRepoUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'github.com' && parsed.pathname.split('/').filter(Boolean).length >= 2;
+  } catch {
+    return false;
+  }
+};
+
+// Runtime options
+export const SandboxRuntimeSchema = z.enum(['node24', 'node22', 'python3.13']);
+
+// Sandbox configuration schema with Zod v4
+// Fields can be empty if common config environment variables are set
+export const SandboxConfigSchema = z.object({
+  gistUrl: z
+    .string()
+    .refine((val) => !val || isValidUrl(val), 'Invalid URL format')
+    .refine((val) => !val || isGistUrl(val), 'Must be a valid GitHub Gist URL')
+    .optional()
+    .default(''),
+  
+  repoUrl: z
+    .string()
+    .refine((val) => !val || isValidUrl(val), 'Invalid URL format')
+    .refine((val) => !val || isGitHubRepoUrl(val), 'Must be a valid GitHub repository URL')
+    .optional()
+    .default(''),
+  
+  repoSlug: z
+    .string()
+    .refine((val) => !val || /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(val), 'Invalid repository slug format (owner/repo)')
+    .optional()
+    .default(''),
+  
+  frontDir: z
+    .string()
+    .min(1, 'Frontend directory is required')
+    .refine((val) => !val.includes('..'), 'Path traversal is not allowed')
+    .refine((val) => !val.startsWith('/'), 'Absolute paths are not allowed')
+    .default('frontend'),
+  
+  planFile: z
+    .string()
+    .refine((val) => !val || !val.includes('..'), 'Path traversal is not allowed')
+    .refine((val) => !val || val.endsWith('.md') || val.endsWith('.txt'), 'Plan file must be .md or .txt')
+    .optional()
+    .default(''),
+  
+  githubToken: z
+    .string()
+    .refine((val) => !val || val.length >= 20, 'GitHub token must be at least 20 characters')
+    .refine((val) => !val || val.startsWith('ghp_') || val.startsWith('github_pat_') || val.startsWith('gho_'), 
+      'Invalid GitHub token format')
+    .optional()
+    .default(''),
+  
+  opencodeAuthJsonB64: z
+    .string()
+    .refine((val) => {
+      if (!val) return true; // Allow empty if common config exists
+      try {
+        const decoded = atob(val);
+        JSON.parse(decoded);
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'Invalid base64-encoded JSON')
+    .optional()
+    .default(''),
+  
+  // New: runtime selection (optional, defaults to node24)
+  runtime: SandboxRuntimeSchema.optional().default('node24'),
+  
+  // New: optional snapshot ID to create from
+  snapshotId: z.string().optional(),
+  
+  // New: enable code review (default: false)
+  enableCodeReview: z.boolean().default(false),
+  
+  // New: optional memo field
+  memo: z.string().optional(),
+});
+
+export type ValidatedSandboxConfig = z.infer<typeof SandboxConfigSchema>;
+
+// Validation function
+export function validateSandboxConfig(data: unknown): ValidatedSandboxConfig {
+  return SandboxConfigSchema.parse(data);
+}
+
+// Safe validation that returns result object
+export function safeParseSandboxConfig(data: unknown) {
+  return SandboxConfigSchema.safeParse(data);
+}
+
+// UUID validation
+export const UUIDSchema = z.string().uuid('Invalid session ID format');
+
+export function validateUUID(id: string): string {
+  return UUIDSchema.parse(id);
+}
+
+// Pagination schema
+export const PaginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export type PaginationParams = z.infer<typeof PaginationSchema>;
+
+// Snapshot ID validation
+export const SnapshotIdSchema = z.string().min(1, 'Snapshot ID is required');
+
+export function validateSnapshotId(id: string): string {
+  return SnapshotIdSchema.parse(id);
+}
