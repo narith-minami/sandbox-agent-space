@@ -2,19 +2,16 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/db/queries';
 import { getSandboxManager } from '@/lib/sandbox/manager';
 import { validateUUID } from '@/lib/validators/config';
-import type { SandboxStatusResponse, ApiError } from '@/types/sandbox';
+import type { ApiError, SandboxStatusResponse } from '@/types/sandbox';
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
 }
 
-export async function GET(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -30,7 +27,7 @@ export async function GET(
 
     // Get session from database
     const session = await getSession(sessionId);
-    
+
     if (!session) {
       return NextResponse.json<ApiError>(
         {
@@ -70,7 +67,7 @@ export async function GET(
     return NextResponse.json(response);
   } catch (error) {
     console.error('Failed to get session status:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to get session status',

@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getSessionWithLogs } from '@/lib/db/queries';
 import { validateUUID } from '@/lib/validators/config';
-import type { SandboxSessionWithLogs, ApiError } from '@/types/sandbox';
+import type { ApiError, SandboxSessionWithLogs } from '@/types/sandbox';
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
 }
 
-export async function GET(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -29,7 +26,7 @@ export async function GET(
 
     // Get session with logs
     const result = await getSessionWithLogs(sessionId);
-    
+
     if (!result) {
       return NextResponse.json<ApiError>(
         {
@@ -50,7 +47,7 @@ export async function GET(
       memo: result.session.memo,
       createdAt: result.session.createdAt,
       updatedAt: result.session.updatedAt,
-      logs: result.logs.map(log => ({
+      logs: result.logs.map((log) => ({
         id: log.id,
         sessionId: log.sessionId,
         timestamp: log.timestamp,
@@ -62,7 +59,7 @@ export async function GET(
     return NextResponse.json(response);
   } catch (error) {
     console.error('Failed to get session:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to get session',

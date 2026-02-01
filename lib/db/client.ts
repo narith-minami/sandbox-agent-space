@@ -1,5 +1,5 @@
-import { neon, NeonQueryFunction } from '@neondatabase/serverless';
-import { drizzle, NeonHttpDatabase } from 'drizzle-orm/neon-http';
+import { type NeonQueryFunction, neon } from '@neondatabase/serverless';
+import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
 // Lazy initialization for database connection
@@ -26,7 +26,7 @@ export function getDb(): NeonHttpDatabase<typeof schema> {
 
 // For backward compatibility
 export const db = new Proxy({} as NeonHttpDatabase<typeof schema>, {
-  get: (target, prop) => {
+  get: (_target, prop) => {
     const database = getDb();
     return (database as unknown as Record<string | symbol, unknown>)[prop];
   },

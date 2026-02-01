@@ -12,13 +12,10 @@ interface RouteParams {
  * POST /api/sandbox/[sessionId]/stop
  * Stop a running sandbox
  */
-export async function POST(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -34,7 +31,7 @@ export async function POST(
 
     // Get session from database
     const session = await getSession(sessionId);
-    
+
     if (!session) {
       return NextResponse.json<ApiError>(
         {
@@ -60,14 +57,14 @@ export async function POST(
     const sandboxManager = getSandboxManager();
     await sandboxManager.stopSandboxBySession(sessionId);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       sessionId,
       message: 'Sandbox stopped successfully',
     });
   } catch (error) {
     console.error('Failed to stop sandbox:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to stop sandbox',

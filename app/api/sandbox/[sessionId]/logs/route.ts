@@ -8,13 +8,10 @@ interface RouteParams {
   params: Promise<{ sessionId: string }>;
 }
 
-export async function GET(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -42,15 +39,15 @@ export async function GET(
 
     // Create SSE stream for real-time log streaming
     const encoder = new TextEncoder();
-    
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
           const sandboxManager = getSandboxManager();
-          
+
           // Send initial connection message
-          const initData = `data: ${JSON.stringify({ 
-            type: 'connected', 
+          const initData = `data: ${JSON.stringify({
+            type: 'connected',
             sessionId,
             sandboxId: session.sandboxId,
             status: session.status,
@@ -73,12 +70,12 @@ export async function GET(
           // Send completion message
           const endData = `data: ${JSON.stringify({ type: 'complete' })}\n\n`;
           controller.enqueue(encoder.encode(endData));
-          
+
           controller.close();
         } catch (error) {
-          const errorData = `data: ${JSON.stringify({ 
-            type: 'error', 
-            message: error instanceof Error ? error.message : 'Unknown error' 
+          const errorData = `data: ${JSON.stringify({
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Unknown error',
           })}\n\n`;
           controller.enqueue(encoder.encode(errorData));
           controller.close();
@@ -90,13 +87,13 @@ export async function GET(
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {
     console.error('Failed to stream logs:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to stream logs',

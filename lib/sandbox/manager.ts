@@ -1,8 +1,20 @@
-import { Sandbox, type Command } from '@vercel/sandbox';
-import type { LogLevel, SessionStatus, SandboxConfig, VercelSandboxStatus } from '@/types/sandbox';
-import { addLog, setSessionStatus, setSessionSandboxId, updateSession, getSession } from '@/lib/db/queries';
-import { getSandboxRuntime, getSandboxTimeout, requireAuthentication, type SandboxRuntime } from './auth';
+import { type Command, Sandbox } from '@vercel/sandbox';
+import {
+  addLog,
+  getSession,
+  setSessionSandboxId,
+  setSessionStatus,
+  updateSession,
+} from '@/lib/db/queries';
+import type { LogLevel, SessionStatus, VercelSandboxStatus } from '@/types/sandbox';
+import {
+  getSandboxRuntime,
+  getSandboxTimeout,
+  requireAuthentication,
+  type SandboxRuntime,
+} from './auth';
 import { extractPrUrl, validatePrUrl } from './pr-detector';
+import { mapVercelStatus } from './status-mapper';
 
 export interface SandboxCreateOptions {
   env: Record<string, string>;
@@ -31,7 +43,7 @@ const activeSandboxes = new Map<string, { sandbox: Sandbox; command?: Command }>
 
 /**
  * SandboxManager - Manages sandbox execution using Vercel Sandbox SDK
- * 
+ *
  * This implementation uses the official Vercel Sandbox SDK to create and manage
  * isolated Linux microVMs for secure code execution.
  */
@@ -129,7 +141,7 @@ export class SandboxManager {
       activeSandboxes.set(sessionId, { sandbox });
 
       // Execute command in background (non-blocking)
-      this.executeCommand(sessionId, sandbox, options).catch(error => {
+      this.executeCommand(sessionId, sandbox, options).catch((error) => {
         console.error('Background execution failed:', error);
       });
 
@@ -161,62 +173,8 @@ export class SandboxManager {
       });
 
       // Write plan text to file if provided
-      console.log('[DEBUG MANAGER] options.planText exists:', !!options.planText);
-      console.log('[DEBUG MANAGER] options.planFilePath:', options.planFilePath);
-      console.log('[DEBUG MANAGER] planText length:', options.planText?.length || 0);
-      
       if (options.planText && options.planFilePath) {
-        // Use the absolute path directly (planFilePath is already absolute from API)
-        const absolutePlanPath = options.planFilePath;
-        
-        await addLog({
-          sessionId,
-          level: 'info',
-          message: `[DEBUG] Writing plan text to ${absolutePlanPath} (length: ${options.planText.length})`,
-        });
-
-        try {
-          // Ensure parent directory exists
-          const dirPath = absolutePlanPath.substring(0, absolutePlanPath.lastIndexOf('/'));
-          console.log('[DEBUG MANAGER] Creating directory:', dirPath);
-          
-          if (dirPath) {
-            const mkdirResult = await sandbox.runCommand('mkdir', ['-p', dirPath]);
-            console.log('[DEBUG MANAGER] mkdir result:', mkdirResult.exitCode);
-          }
-
-          // Write plan text as file
-          console.log('[DEBUG MANAGER] Writing file...');
-          await sandbox.writeFiles([{
-            path: absolutePlanPath,
-            content: Buffer.from(options.planText, 'utf-8'),
-          }]);
-
-          // Verify file was written
-          const lsResult = await sandbox.runCommand('ls', ['-la', absolutePlanPath]);
-          console.log('[DEBUG MANAGER] File created:', lsResult.exitCode, await lsResult.stdout());
-          
-          // Check file content
-          const catResult = await sandbox.runCommand('cat', [absolutePlanPath]);
-          const content = await catResult.stdout();
-          console.log('[DEBUG MANAGER] File content length:', content.length);
-          console.log('[DEBUG MANAGER] File content preview:', content.substring(0, 100));
-
-          await addLog({
-            sessionId,
-            level: 'info',
-            message: `[DEBUG] Plan file created successfully at ${absolutePlanPath}`,
-          });
-        } catch (error) {
-          console.error('[DEBUG MANAGER] Error writing plan file:', error);
-          await addLog({
-            sessionId,
-            level: 'error',
-            message: `[DEBUG] Failed to write plan file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          });
-        }
-      } else {
-        console.log('[DEBUG MANAGER] Skipping plan file creation - planText or planFilePath missing');
+        await this.writePlanFile(sessionId, sandbox, options.planText, options.planFilePath);
       }
 
       // Log environment variables (masked)
@@ -228,7 +186,8 @@ export class SandboxManager {
       });
 
       // Log the command (truncated for safety)
-      const truncatedCmd = options.command.substring(0, 200) + (options.command.length > 200 ? '...' : '');
+      const truncatedCmd =
+        options.command.substring(0, 200) + (options.command.length > 200 ? '...' : '');
       await addLog({
         sessionId,
         level: 'info',
@@ -237,31 +196,10 @@ export class SandboxManager {
 
       // Download and execute the script from Gist if GIST_URL is provided
       if (options.env.GIST_URL) {
-        await addLog({
-          sessionId,
-          level: 'info',
-          message: 'Downloading script from Gist...',
-        });
-
-        // Download the script
-        const downloadResult = await sandbox.runCommand('curl', ['-fsSL', options.env.GIST_URL, '-o', 'run.sh']);
-        if (downloadResult.exitCode !== 0) {
-          const stderr = await downloadResult.stderr();
-          throw new Error(`Failed to download script: ${stderr}`);
-        }
-
-        // Make it executable
-        await sandbox.runCommand('chmod', ['+x', 'run.sh']);
-
-        await addLog({
-          sessionId,
-          level: 'info',
-          message: 'Script downloaded, starting execution...',
-        });
+        await this.downloadAndPrepareGist(sessionId, sandbox, options.env.GIST_URL);
       }
 
       // Run the main command with environment variables
-      // Using detached mode to stream logs in real-time
       const command = await sandbox.runCommand({
         cmd: 'bash',
         args: ['-c', options.command],
@@ -277,114 +215,224 @@ export class SandboxManager {
       }
 
       // Stream logs in real-time
-      try {
-        let prUrlDetected = false; // Track if PR URL has been detected
-        
-        for await (const log of command.logs()) {
-          const level: LogLevel = log.stream === 'stderr' ? 'stderr' : 'stdout';
-          
-          // Split by newlines and log each line separately
-          const lines = log.data.split('\n').filter(line => line.trim());
-          for (const line of lines) {
-            // Log the message
-            await addLog({
-              sessionId,
-              level,
-              message: line,
-            });
-            
-            // Check for PR URL if not already detected
-            if (!prUrlDetected) {
-              const prUrl = extractPrUrl(line);
-              if (prUrl) {
-                // Validate PR URL against repository
-                const isValid = validatePrUrl(prUrl, options.env.REPO_SLUG);
-                
-                if (!isValid) {
-                  await addLog({
-                    sessionId,
-                    level: 'info',
-                    message: `⚠️ Detected PR URL does not match repository: ${prUrl}`,
-                  });
-                }
-                
-                // Update session with PR URL
-                try {
-                  await updateSession(sessionId, { prUrl });
-                  await addLog({
-                    sessionId,
-                    level: 'info',
-                    message: `✓ Pull request detected and saved: ${prUrl}`,
-                  });
-                  prUrlDetected = true; // Only save the first PR URL
-                } catch (updateError) {
-                  await addLog({
-                    sessionId,
-                    level: 'error',
-                    message: `Failed to save PR URL: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`,
-                  });
-                }
-              }
-            }
-          }
-        }
-      } catch (streamError) {
-        // Log streaming might fail if sandbox stops
-        console.error('Log streaming error:', streamError);
-      }
+      await this.streamLogsAndDetectPrUrl(sessionId, command, options.env.REPO_SLUG);
 
       // Wait for command to complete and get result
       const result = await command.wait();
-
-      if (result.exitCode === 0) {
-        await setSessionStatus(sessionId, 'completed');
-        await addLog({
-          sessionId,
-          level: 'info',
-          message: 'Sandbox execution completed successfully.',
-        });
-      } else {
-        await setSessionStatus(sessionId, 'failed');
-        await addLog({
-          sessionId,
-          level: 'error',
-          message: `Command exited with code: ${result.exitCode}`,
-        });
-      }
-
-      // Clean up: stop sandbox after execution
-      try {
-        await sandbox.stop();
-        await addLog({
-          sessionId,
-          level: 'info',
-          message: 'Sandbox stopped and resources released.',
-        });
-      } catch (stopError) {
-        console.error('Failed to stop sandbox:', stopError);
-      }
-
-      // Remove from active sandboxes
-      activeSandboxes.delete(sessionId);
-
+      await this.handleCommandResult(sessionId, sandbox, result.exitCode);
     } catch (error) {
-      await setSessionStatus(sessionId, 'failed');
+      await this.handleExecutionError(sessionId, sandbox, error);
+    }
+  }
 
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  /**
+   * Write plan text to file in sandbox
+   */
+  private async writePlanFile(
+    sessionId: string,
+    sandbox: Sandbox,
+    planText: string,
+    planFilePath: string
+  ): Promise<void> {
+    try {
+      // Ensure parent directory exists
+      const dirPath = planFilePath.substring(0, planFilePath.lastIndexOf('/'));
+      if (dirPath) {
+        await sandbox.runCommand('mkdir', ['-p', dirPath]);
+      }
+
+      // Write plan text as file
+      await sandbox.writeFiles([
+        {
+          path: planFilePath,
+          content: Buffer.from(planText, 'utf-8'),
+        },
+      ]);
+
+      await addLog({
+        sessionId,
+        level: 'info',
+        message: `Plan file created at ${planFilePath}`,
+      });
+    } catch (error) {
       await addLog({
         sessionId,
         level: 'error',
-        message: `Execution failed: ${errorMessage}`,
+        message: `Failed to write plan file: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
-
-      // Clean up on error
-      try {
-        await sandbox.stop();
-      } catch {
-        // Ignore stop errors
-      }
-      activeSandboxes.delete(sessionId);
     }
+  }
+
+  /**
+   * Download script from Gist and prepare for execution
+   */
+  private async downloadAndPrepareGist(
+    sessionId: string,
+    sandbox: Sandbox,
+    gistUrl: string
+  ): Promise<void> {
+    await addLog({
+      sessionId,
+      level: 'info',
+      message: 'Downloading script from Gist...',
+    });
+
+    const downloadResult = await sandbox.runCommand('curl', ['-fsSL', gistUrl, '-o', 'run.sh']);
+    if (downloadResult.exitCode !== 0) {
+      const stderr = await downloadResult.stderr();
+      throw new Error(`Failed to download script: ${stderr}`);
+    }
+
+    await sandbox.runCommand('chmod', ['+x', 'run.sh']);
+
+    await addLog({
+      sessionId,
+      level: 'info',
+      message: 'Script downloaded, starting execution...',
+    });
+  }
+
+  /**
+   * Stream logs and detect PR URLs
+   */
+  private async streamLogsAndDetectPrUrl(
+    sessionId: string,
+    command: Command,
+    repoSlug?: string
+  ): Promise<void> {
+    let prUrlDetected = false;
+
+    try {
+      for await (const log of command.logs()) {
+        const level: LogLevel = log.stream === 'stderr' ? 'stderr' : 'stdout';
+
+        // Split by newlines and log each line separately
+        const lines = log.data.split('\n').filter((line) => line.trim());
+        for (const line of lines) {
+          await addLog({
+            sessionId,
+            level,
+            message: line,
+          });
+
+          // Check for PR URL if not already detected
+          if (!prUrlDetected) {
+            const prUrl = extractPrUrl(line);
+            if (prUrl && prUrl !== null) {
+              await this.handlePrUrlDetection(sessionId, prUrl, repoSlug);
+              prUrlDetected = true;
+            }
+          }
+        }
+      }
+    } catch (streamError) {
+      // Log streaming might fail if sandbox stops
+      console.error('Log streaming error:', streamError);
+    }
+  }
+
+  /**
+   * Handle PR URL detection and save to session
+   */
+  private async handlePrUrlDetection(
+    sessionId: string,
+    prUrl: string,
+    repoSlug?: string
+  ): Promise<void> {
+    const isValid = repoSlug ? validatePrUrl(prUrl, repoSlug) : true;
+
+    if (!isValid) {
+      await addLog({
+        sessionId,
+        level: 'info',
+        message: `⚠️ Detected PR URL does not match repository: ${prUrl}`,
+      });
+    }
+
+    try {
+      await updateSession(sessionId, { prUrl });
+      await addLog({
+        sessionId,
+        level: 'info',
+        message: `✓ Pull request detected and saved: ${prUrl}`,
+      });
+    } catch (updateError) {
+      await addLog({
+        sessionId,
+        level: 'error',
+        message: `Failed to save PR URL: ${updateError instanceof Error ? updateError.message : 'Unknown error'}`,
+      });
+    }
+  }
+
+  /**
+   * Handle command execution result
+   */
+  private async handleCommandResult(
+    sessionId: string,
+    sandbox: Sandbox,
+    exitCode: number
+  ): Promise<void> {
+    if (exitCode === 0) {
+      await setSessionStatus(sessionId, 'completed');
+      await addLog({
+        sessionId,
+        level: 'info',
+        message: 'Sandbox execution completed successfully.',
+      });
+    } else {
+      await setSessionStatus(sessionId, 'failed');
+      await addLog({
+        sessionId,
+        level: 'error',
+        message: `Command exited with code: ${exitCode}`,
+      });
+    }
+
+    await this.cleanupSandbox(sessionId, sandbox, 'Sandbox stopped and resources released.');
+  }
+
+  /**
+   * Handle execution error
+   */
+  private async handleExecutionError(
+    sessionId: string,
+    sandbox: Sandbox,
+    error: unknown
+  ): Promise<void> {
+    await setSessionStatus(sessionId, 'failed');
+
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await addLog({
+      sessionId,
+      level: 'error',
+      message: `Execution failed: ${errorMessage}`,
+    });
+
+    await this.cleanupSandbox(sessionId, sandbox, null);
+  }
+
+  /**
+   * Clean up sandbox resources
+   */
+  private async cleanupSandbox(
+    sessionId: string,
+    sandbox: Sandbox,
+    logMessage: string | null
+  ): Promise<void> {
+    try {
+      await sandbox.stop();
+      if (logMessage) {
+        await addLog({
+          sessionId,
+          level: 'info',
+          message: logMessage,
+        });
+      }
+    } catch {
+      // Ignore stop errors
+    }
+    activeSandboxes.delete(sessionId);
   }
 
   /**
@@ -393,31 +441,9 @@ export class SandboxManager {
   async getSandboxStatus(sandboxId: string): Promise<SandboxStatus> {
     try {
       const sandbox = await Sandbox.get({ sandboxId });
-      
-      // Map Vercel status to our session status
-      let status: SessionStatus;
-      switch (sandbox.status) {
-        case 'pending':
-          status = 'pending';
-          break;
-        case 'running':
-          status = 'running';
-          break;
-        case 'stopping':
-          status = 'stopping';
-          break;
-        case 'stopped':
-          status = 'completed';
-          break;
-        case 'failed':
-          status = 'failed';
-          break;
-        default:
-          status = 'pending';
-      }
 
       return {
-        status,
+        status: mapVercelStatus(sandbox.status),
         vercelStatus: sandbox.status,
         timeout: sandbox.timeout,
       };
@@ -487,7 +513,7 @@ export class SandboxManager {
         break;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       iterations++;
     }
   }
@@ -499,7 +525,6 @@ export class SandboxManager {
     try {
       const sandbox = await Sandbox.get({ sandboxId });
       await sandbox.stop();
-      console.log(`Sandbox ${sandboxId} stopped successfully`);
     } catch (error) {
       console.error(`Failed to stop sandbox ${sandboxId}:`, error);
       throw error;
@@ -600,10 +625,7 @@ export class SandboxManager {
   /**
    * Write files to sandbox
    */
-  async writeFiles(
-    sessionId: string,
-    files: { path: string; content: Buffer }[]
-  ): Promise<void> {
+  async writeFiles(sessionId: string, files: { path: string; content: Buffer }[]): Promise<void> {
     const sandbox = await this.getSandboxBySession(sessionId);
     if (!sandbox) {
       throw new Error('Sandbox not found or not running');

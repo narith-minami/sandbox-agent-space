@@ -23,7 +23,13 @@ export interface SandboxConfig {
 export type SessionStatus = 'pending' | 'running' | 'stopping' | 'completed' | 'failed';
 
 // Vercel Sandbox status (from SDK)
-export type VercelSandboxStatus = 'pending' | 'running' | 'stopping' | 'stopped' | 'failed' | 'snapshotting';
+export type VercelSandboxStatus =
+  | 'pending'
+  | 'running'
+  | 'stopping'
+  | 'stopped'
+  | 'failed'
+  | 'snapshotting';
 
 // Log entry types
 export type LogLevel = 'info' | 'error' | 'debug' | 'stdout' | 'stderr';
@@ -45,6 +51,7 @@ export interface SandboxSession {
   runtime: SandboxRuntime;
   prUrl?: string | null; // Pull Request URL
   memo?: string | null; // Optional memo/notes
+  archived?: boolean; // Archive flag
   createdAt: Date;
   updatedAt: Date;
 }

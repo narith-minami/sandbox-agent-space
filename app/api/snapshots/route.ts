@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { listSnapshotRecords } from '@/lib/db/queries';
+import { isAuthenticationAvailable } from '@/lib/sandbox/auth';
 import { listSnapshots as listVercelSnapshots } from '@/lib/sandbox/snapshots';
 import { PaginationSchema } from '@/lib/validators/config';
-import { isAuthenticationAvailable } from '@/lib/sandbox/auth';
-import type { SnapshotListResponse, ApiError } from '@/types/sandbox';
+import type { ApiError, SnapshotListResponse } from '@/types/sandbox';
 
 /**
  * GET /api/snapshots
  * List all snapshots for the project
- * 
+ *
  * Query parameters:
  * - page: Page number (default: 1)
  * - limit: Number of items per page (default: 20, max: 100)
@@ -19,13 +19,13 @@ import type { SnapshotListResponse, ApiError } from '@/types/sandbox';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     // Parse pagination
     const paginationResult = PaginationSchema.safeParse({
       page: searchParams.get('page') || 1,
       limit: searchParams.get('limit') || 20,
     });
-    
+
     if (!paginationResult.success) {
       return NextResponse.json<ApiError>(
         {
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         { status: 400 }
       );
     }
-    
+
     const { page, limit } = paginationResult.data;
     const source = searchParams.get('source') || 'local';
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       }
 
       const result = await listVercelSnapshots({ limit });
-      
+
       return NextResponse.json<SnapshotListResponse>({
         snapshots: result.snapshots,
         total: result.snapshots.length,
@@ -62,9 +62,9 @@ export async function GET(request: Request) {
 
     // Get snapshots from local database
     const result = await listSnapshotRecords(page, limit);
-    
+
     return NextResponse.json<SnapshotListResponse>({
-      snapshots: result.snapshots.map(s => ({
+      snapshots: result.snapshots.map((s) => ({
         snapshotId: s.snapshotId,
         sourceSandboxId: s.sourceSandboxId,
         status: s.status,
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Failed to list snapshots:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to list snapshots',

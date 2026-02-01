@@ -1,7 +1,12 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { SandboxConfig, CreateSandboxResponse, SandboxSessionWithLogs, ApiError } from '@/types/sandbox';
+import type {
+  ApiError,
+  CreateSandboxResponse,
+  SandboxConfig,
+  SandboxSessionWithLogs,
+} from '@/types/sandbox';
 
 // Create sandbox mutation
 export function useSandboxCreate() {
@@ -35,7 +40,7 @@ export function useSession(sessionId: string | null) {
     queryKey: ['session', sessionId],
     queryFn: async (): Promise<SandboxSessionWithLogs> => {
       const response = await fetch(`/api/sandbox/${sessionId}`);
-      
+
       if (!response.ok) {
         const error: ApiError = await response.json();
         throw new Error(error.error);
@@ -46,10 +51,8 @@ export function useSession(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Stop refetching when session is completed or failed
-      if (data?.status === 'completed' || data?.status === 'failed') {
-        return false;
-      }
+      const isTerminalStatus = data?.status === 'completed' || data?.status === 'failed';
+      if (isTerminalStatus) return false;
       return 2000; // Refetch every 2 seconds while running
     },
   });
@@ -61,7 +64,7 @@ export function useSessionStatus(sessionId: string | null) {
     queryKey: ['session-status', sessionId],
     queryFn: async () => {
       const response = await fetch(`/api/sandbox/${sessionId}/status`);
-      
+
       if (!response.ok) {
         const error: ApiError = await response.json();
         throw new Error(error.error);
@@ -72,9 +75,8 @@ export function useSessionStatus(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (data?.status === 'completed' || data?.status === 'failed') {
-        return false;
-      }
+      const isTerminalStatus = data?.status === 'completed' || data?.status === 'failed';
+      if (isTerminalStatus) return false;
       return 1000;
     },
   });

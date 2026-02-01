@@ -78,9 +78,9 @@ export function clearLastUsedValues() {
   if (typeof window === 'undefined') return;
 
   try {
-    Object.values(STORAGE_KEYS).forEach(key => {
+    for (const key of Object.values(STORAGE_KEYS)) {
       localStorage.removeItem(key);
-    });
+    }
   } catch (error) {
     console.error('Failed to clear localStorage:', error);
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { listSessions } from '@/lib/db/queries';
-import { PaginationSchema } from '@/lib/validators/config';
-import type { SessionListResponse, ApiError } from '@/types/sandbox';
+import { PaginationSchema, SessionListFilterSchema } from '@/lib/validators/config';
+import type { ApiError, SessionListResponse } from '@/types/sandbox';
 
 export async function GET(request: Request) {
   try {
@@ -10,9 +10,21 @@ export async function GET(request: Request) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '20';
 
+    // Parse status filter (comma-separated)
+    const statusParam = searchParams.get('status');
+    const status = statusParam
+      ? statusParam
+          .split(',')
+          .filter((s): s is 'running' | 'failed' | 'completed' =>
+            ['running', 'failed', 'completed'].includes(s)
+          )
+      : undefined;
+
+    const archived = searchParams.get('archived');
+
     // Validate pagination
     const paginationResult = PaginationSchema.safeParse({ page, limit });
-    
+
     if (!paginationResult.success) {
       return NextResponse.json<ApiError>(
         {
@@ -24,13 +36,31 @@ export async function GET(request: Request) {
       );
     }
 
-    const { page: validPage, limit: validLimit } = paginationResult.data;
+    // Validate filters
+    const filterResult = SessionListFilterSchema.safeParse({
+      status,
+      archived: archived === null ? undefined : archived,
+    });
 
-    // Get sessions
-    const result = await listSessions(validPage, validLimit);
+    if (!filterResult.success) {
+      return NextResponse.json<ApiError>(
+        {
+          error: 'Invalid filter parameters',
+          code: 'VALIDATION_ERROR',
+          details: { errors: filterResult.error.flatten().fieldErrors },
+        },
+        { status: 400 }
+      );
+    }
+
+    const { page: validPage, limit: validLimit } = paginationResult.data;
+    const filters = filterResult.data;
+
+    // Get sessions with filters
+    const result = await listSessions(validPage, validLimit, filters);
 
     const response: SessionListResponse = {
-      sessions: result.sessions.map(session => ({
+      sessions: result.sessions.map((session) => ({
         id: session.id,
         sandboxId: session.sandboxId,
         status: session.status,
@@ -38,6 +68,7 @@ export async function GET(request: Request) {
         runtime: session.runtime,
         prUrl: session.prUrl,
         memo: session.memo,
+        archived: session.archived,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       })),
@@ -49,7 +80,7 @@ export async function GET(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error('Failed to list sessions:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to list sessions',

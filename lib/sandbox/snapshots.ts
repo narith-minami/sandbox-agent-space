@@ -5,7 +5,7 @@ import type { SnapshotSummary } from '@/types/sandbox';
  * Snapshot utilities for Vercel Sandbox SDK
  * Snapshots capture the filesystem, installed packages, and environment configuration,
  * letting you skip setup steps and start new sandboxes faster.
- * 
+ *
  * Note: Snapshots expire after 7 days.
  */
 
@@ -53,7 +53,7 @@ export async function listSnapshots(options?: {
 
     // Map SDK response to our types
     // SDK returns timestamps as numbers, we convert to Date
-    const snapshots: SnapshotSummary[] = result.json.snapshots.map(s => ({
+    const snapshots: SnapshotSummary[] = result.json.snapshots.map((s) => ({
       snapshotId: s.id, // SDK uses 'id' field
       sourceSandboxId: s.sourceSandboxId,
       status: s.status,
@@ -86,17 +86,19 @@ export async function deleteSnapshot(snapshotId: string): Promise<boolean> {
   }
 }
 
+function isSnapshotExpired(snapshot: { status: string; expiresAt: Date }): boolean {
+  if (snapshot.status !== 'created') return true;
+  if (snapshot.expiresAt < new Date()) return true;
+  return false;
+}
+
 /**
  * Check if a snapshot is valid (not expired and not deleted)
  */
 export async function isSnapshotValid(snapshotId: string): Promise<boolean> {
   const snapshot = await getSnapshot(snapshotId);
   if (!snapshot) return false;
-  
-  if (snapshot.status !== 'created') return false;
-  if (snapshot.expiresAt < new Date()) return false;
-  
-  return true;
+  return !isSnapshotExpired(snapshot);
 }
 
 /**
@@ -109,7 +111,7 @@ export function getSnapshotExpirationInfo(expiresAt: Date): {
 } {
   const now = new Date();
   const diff = expiresAt.getTime() - now.getTime();
-  
+
   if (diff <= 0) {
     return {
       isExpired: true,
@@ -117,10 +119,10 @@ export function getSnapshotExpirationInfo(expiresAt: Date): {
       hoursRemaining: 0,
     };
   }
-  
+
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
-  
+
   return {
     isExpired: false,
     daysRemaining: days,

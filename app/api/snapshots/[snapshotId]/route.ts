@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getSnapshotRecord, updateSnapshotStatus, deleteSnapshotRecord } from '@/lib/db/queries';
-import { getSnapshot, deleteSnapshot } from '@/lib/sandbox/snapshots';
-import { validateSnapshotId } from '@/lib/validators/config';
+import { getSnapshotRecord, updateSnapshotStatus } from '@/lib/db/queries';
 import { isAuthenticationAvailable } from '@/lib/sandbox/auth';
-import type { SnapshotSummary, ApiError } from '@/types/sandbox';
+import { deleteSnapshot, getSnapshot } from '@/lib/sandbox/snapshots';
+import { validateSnapshotId } from '@/lib/validators/config';
+import type { ApiError, SnapshotSummary } from '@/types/sandbox';
 
 interface RouteParams {
   params: Promise<{ snapshotId: string }>;
@@ -13,13 +13,10 @@ interface RouteParams {
  * GET /api/snapshots/[snapshotId]
  * Get snapshot details
  */
-export async function GET(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { snapshotId } = await params;
-    
+
     // Validate snapshot ID
     try {
       validateSnapshotId(snapshotId);
@@ -35,7 +32,7 @@ export async function GET(
 
     // Try to get from local database first
     const localRecord = await getSnapshotRecord(snapshotId);
-    
+
     if (localRecord) {
       const response: SnapshotSummary = {
         snapshotId: localRecord.snapshotId,
@@ -60,7 +57,7 @@ export async function GET(
     }
 
     const vercelSnapshot = await getSnapshot(snapshotId);
-    
+
     if (!vercelSnapshot) {
       return NextResponse.json<ApiError>(
         {
@@ -83,7 +80,7 @@ export async function GET(
     return NextResponse.json(response);
   } catch (error) {
     console.error('Failed to get snapshot:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to get snapshot',
@@ -99,13 +96,10 @@ export async function GET(
  * DELETE /api/snapshots/[snapshotId]
  * Delete a snapshot
  */
-export async function DELETE(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const { snapshotId } = await params;
-    
+
     // Validate snapshot ID
     try {
       validateSnapshotId(snapshotId);
@@ -131,7 +125,7 @@ export async function DELETE(
 
     // Delete from Vercel
     const deleted = await deleteSnapshot(snapshotId);
-    
+
     if (!deleted) {
       return NextResponse.json<ApiError>(
         {
@@ -148,14 +142,14 @@ export async function DELETE(
       await updateSnapshotStatus(snapshotId, 'deleted');
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       snapshotId,
       message: 'Snapshot deleted successfully',
     });
   } catch (error) {
     console.error('Failed to delete snapshot:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to delete snapshot',

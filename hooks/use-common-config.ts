@@ -19,7 +19,7 @@ export function useCommonConfig() {
       }
       return response.json();
     },
-    staleTime: Infinity, // Config doesn't change during session
+    staleTime: Number.POSITIVE_INFINITY, // Config doesn't change during session
     retry: false,
   });
 }

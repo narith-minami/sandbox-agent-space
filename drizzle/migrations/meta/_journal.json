@@ -22,6 +22,13 @@
       "when": 1769890174190,
       "tag": "0002_robust_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1769964359585,
+      "tag": "0003_breezy_stranger",
+      "breakpoints": true
     }
   ]
 }

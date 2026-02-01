@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getSession, createSnapshotRecord } from '@/lib/db/queries';
+import { createSnapshotRecord, getSession } from '@/lib/db/queries';
 import { getSandboxManager } from '@/lib/sandbox/manager';
 import { getSnapshot } from '@/lib/sandbox/snapshots';
 import { validateUUID } from '@/lib/validators/config';
-import type { CreateSnapshotResponse, ApiError } from '@/types/sandbox';
+import type { ApiError, CreateSnapshotResponse } from '@/types/sandbox';
 
 interface RouteParams {
   params: Promise<{ sessionId: string }>;
@@ -12,17 +12,14 @@ interface RouteParams {
 /**
  * POST /api/sandbox/[sessionId]/snapshot
  * Create a snapshot of the current sandbox state
- * 
+ *
  * Note: Creating a snapshot will automatically stop the sandbox.
  * Snapshots expire after 7 days.
  */
-export async function POST(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -38,7 +35,7 @@ export async function POST(
 
     // Get session from database
     const session = await getSession(sessionId);
-    
+
     if (!session) {
       return NextResponse.json<ApiError>(
         {
@@ -76,7 +73,7 @@ export async function POST(
 
     // Get snapshot details from Vercel
     const snapshotDetails = await getSnapshot(result.snapshotId);
-    
+
     // Save snapshot record to database
     await createSnapshotRecord({
       snapshotId: result.snapshotId,
@@ -96,7 +93,7 @@ export async function POST(
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error('Failed to create snapshot:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to create snapshot',

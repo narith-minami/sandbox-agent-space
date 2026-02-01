@@ -1,6 +1,6 @@
-import { pgTable, text, timestamp, uuid, jsonb, bigint } from 'drizzle-orm/pg-core';
-import type { SandboxConfig, SessionStatus, LogLevel } from '@/types/sandbox';
+import { bigint, boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { SandboxRuntime } from '@/lib/sandbox/auth';
+import type { LogLevel, SandboxConfig, SessionStatus } from '@/types/sandbox';
 
 // Sessions table
 export const sessions = pgTable('sessions', {
@@ -11,6 +11,7 @@ export const sessions = pgTable('sessions', {
   runtime: text('runtime').$type<SandboxRuntime>().notNull().default('node24'),
   prUrl: text('pr_url'), // Pull Request URL
   memo: text('memo'), // Optional memo/notes
+  archived: boolean('archived').default(false).notNull(), // Archive flag
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -18,7 +19,9 @@ export const sessions = pgTable('sessions', {
 // Logs table
 export const logs = pgTable('logs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }).notNull(),
+  sessionId: uuid('session_id')
+    .references(() => sessions.id, { onDelete: 'cascade' })
+    .notNull(),
   timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
   level: text('level').$type<LogLevel>().notNull().default('info'),
   message: text('message').notNull(),

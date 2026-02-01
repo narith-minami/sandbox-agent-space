@@ -17,6 +17,15 @@ const PR_URL_PATTERNS = [
   /https:\/\/github\.com\/([\w-]+)\/([\w.-]+)\/pull\/(\d+)/g,
 ];
 
+function tryExtractPrUrlWithPattern(logMessage: string, pattern: RegExp): string | null {
+  pattern.lastIndex = 0;
+  const match = pattern.exec(logMessage);
+  if (!match) return null;
+
+  const [, owner, repo, prNumber] = match;
+  return `https://github.com/${owner}/${repo}/pull/${prNumber}`;
+}
+
 /**
  * Extracts the first GitHub PR URL found in a log message
  * @param logMessage - The log message to search for PR URLs
@@ -24,18 +33,34 @@ const PR_URL_PATTERNS = [
  */
 export function extractPrUrl(logMessage: string): string | null {
   for (const pattern of PR_URL_PATTERNS) {
-    // Reset lastIndex to ensure global regex works correctly
-    pattern.lastIndex = 0;
-
-    const match = pattern.exec(logMessage);
-    if (match) {
-      // Reconstruct the full URL from the regex match
-      const [, owner, repo, prNumber] = match;
-      return `https://github.com/${owner}/${repo}/pull/${prNumber}`;
-    }
+    const result = tryExtractPrUrlWithPattern(logMessage, pattern);
+    if (result) return result;
   }
-
   return null;
+}
+
+interface ParsedPrUrl {
+  owner: string;
+  repo: string;
+  prNumber: string;
+}
+
+function parsePrUrl(prUrl: string): ParsedPrUrl | null {
+  try {
+    const url = new URL(prUrl);
+    if (url.hostname !== 'github.com') return null;
+
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    if (pathParts.length !== 4 || pathParts[2] !== 'pull') return null;
+
+    return {
+      owner: pathParts[0],
+      repo: pathParts[1],
+      prNumber: pathParts[3],
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -45,22 +70,9 @@ export function extractPrUrl(logMessage: string): string | null {
  * @returns true if the URL matches the repository, false otherwise
  */
 export function validatePrUrl(prUrl: string, repoSlug: string): boolean {
-  try {
-    const url = new URL(prUrl);
-    if (url.hostname !== 'github.com') {
-      return false;
-    }
-
-    const pathParts = url.pathname.split('/').filter(Boolean);
-    if (pathParts.length !== 4 || pathParts[2] !== 'pull') {
-      return false;
-    }
-
-    const urlRepoSlug = `${pathParts[0]}/${pathParts[1]}`;
-    return urlRepoSlug === repoSlug;
-  } catch {
-    return false;
-  }
+  const parsed = parsePrUrl(prUrl);
+  if (!parsed) return false;
+  return `${parsed.owner}/${parsed.repo}` === repoSlug;
 }
 
 /**
@@ -69,19 +81,7 @@ export function validatePrUrl(prUrl: string, repoSlug: string): boolean {
  * @returns The repository slug (owner/repo) or null if invalid
  */
 export function extractRepoSlugFromPrUrl(prUrl: string): string | null {
-  try {
-    const url = new URL(prUrl);
-    if (url.hostname !== 'github.com') {
-      return null;
-    }
-
-    const pathParts = url.pathname.split('/').filter(Boolean);
-    if (pathParts.length !== 4 || pathParts[2] !== 'pull') {
-      return null;
-    }
-
-    return `${pathParts[0]}/${pathParts[1]}`;
-  } catch {
-    return null;
-  }
+  const parsed = parsePrUrl(prUrl);
+  if (!parsed) return null;
+  return `${parsed.owner}/${parsed.repo}`;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { LogLevel } from '@/types/sandbox';
 
 interface StreamLogEntry {
@@ -37,17 +37,20 @@ export function useLogStream(sessionId: string | null): UseLogStreamResult {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         switch (data.type) {
           case 'connected':
             setIsConnected(true);
             break;
           case 'log':
-            setLogs((prev) => [...prev, {
-              timestamp: data.timestamp,
-              level: data.level,
-              message: data.message,
-            }]);
+            setLogs((prev) => [
+              ...prev,
+              {
+                timestamp: data.timestamp,
+                level: data.level,
+                message: data.message,
+              },
+            ]);
             break;
           case 'complete':
             setIsComplete(true);
@@ -77,16 +80,22 @@ export function useLogStream(sessionId: string | null): UseLogStreamResult {
 
   useEffect(() => {
     if (!sessionId) {
-      setLogs([]);
-      setIsConnected(false);
-      setError(null);
-      setIsComplete(false);
       return;
     }
 
     const cleanup = connect();
     return cleanup;
   }, [sessionId, connect]);
+
+  // Reset state when sessionId becomes null
+  useEffect(() => {
+    if (sessionId === null) {
+      setLogs([]);
+      setIsConnected(false);
+      setError(null);
+      setIsComplete(false);
+    }
+  }, [sessionId]);
 
   return {
     logs,

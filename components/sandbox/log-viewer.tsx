@@ -1,9 +1,9 @@
 'use client';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import type { LogLevel } from '@/types/sandbox';
 import { useEffect, useRef } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { LogLevel } from '@/types/sandbox';
 
 interface LogEntry {
   timestamp: string;
@@ -28,6 +28,7 @@ const levelColors: Record<LogLevel, string> = {
 export function LogViewer({ logs, autoScroll = true, maxHeight = '500px' }: LogViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when logs array changes
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -36,31 +37,36 @@ export function LogViewer({ logs, autoScroll = true, maxHeight = '500px' }: LogV
 
   if (logs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground border rounded-lg bg-muted/50">
+      <div className='flex items-center justify-center h-40 text-muted-foreground border rounded-lg bg-muted/50'>
         No logs available
       </div>
     );
   }
 
   return (
-    <ScrollArea 
-      className="border rounded-lg bg-black/95" 
+    <ScrollArea
+      className='border rounded-lg bg-black/95'
       style={{ height: maxHeight }}
       ref={scrollRef}
     >
-      <div className="p-4 font-mono text-sm space-y-1">
+      <div className='p-4 font-mono text-sm space-y-1'>
         {logs.map((log, index) => (
-          <div key={index} className="flex gap-2 items-start hover:bg-white/5 px-2 py-1 rounded">
-            <span className="text-muted-foreground shrink-0 text-xs">
+          <div
+            key={`${log.timestamp}-${index}`}
+            className='flex gap-2 items-start hover:bg-white/5 px-2 py-1 rounded'
+          >
+            <span className='text-muted-foreground shrink-0 text-xs'>
               {new Date(log.timestamp).toLocaleTimeString()}
             </span>
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant='outline'
               className={`shrink-0 text-xs uppercase ${levelColors[log.level]}`}
             >
               {log.level}
             </Badge>
-            <span className={`text-white/90 break-all ${log.level === 'error' || log.level === 'stderr' ? 'text-red-400' : ''}`}>
+            <span
+              className={`text-white/90 break-all ${log.level === 'error' || log.level === 'stderr' ? 'text-red-400' : ''}`}
+            >
               {log.message}
             </span>
           </div>

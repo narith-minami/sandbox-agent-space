@@ -7,12 +7,12 @@ function getRedis(): Redis | null {
   if (!_redis) {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    
+
     if (!url || !token) {
       console.warn('Redis environment variables not set. Rate limiting disabled.');
       return null;
     }
-    
+
     _redis = new Redis({ url, token });
   }
   return _redis;
@@ -34,7 +34,7 @@ export async function checkRateLimit(
   windowSeconds = 3600
 ): Promise<RateLimitResult> {
   const redis = getRedis();
-  
+
   // If Redis is not configured, allow all requests
   if (!redis) {
     return {
@@ -57,10 +57,15 @@ export async function checkRateLimit(
 
     if (requestCount >= maxRequests) {
       // Get the oldest request timestamp to calculate reset time
-      const oldestRequests = await redis.zrange<{ score: number; member: string }[]>(key, 0, 0, { withScores: true });
-      const oldestTimestamp = oldestRequests.length > 0 && typeof oldestRequests[0] === 'object' && 'score' in oldestRequests[0] 
-        ? oldestRequests[0].score 
-        : now;
+      const oldestRequests = await redis.zrange<{ score: number; member: string }[]>(key, 0, 0, {
+        withScores: true,
+      });
+      const oldestTimestamp =
+        oldestRequests.length > 0 &&
+        typeof oldestRequests[0] === 'object' &&
+        'score' in oldestRequests[0]
+          ? oldestRequests[0].score
+          : now;
       const resetTime = Math.ceil((oldestTimestamp + windowSeconds * 1000 - now) / 1000);
 
       return {
@@ -72,7 +77,7 @@ export async function checkRateLimit(
 
     // Add current request
     await redis.zadd(key, { score: now, member: `${now}:${Math.random()}` });
-    
+
     // Set expiry on the key
     await redis.expire(key, windowSeconds);
 
@@ -110,7 +115,7 @@ export function getClientIp(request: Request): string {
   if (forwardedFor) {
     return forwardedFor.split(',')[0].trim();
   }
-  
+
   const realIp = request.headers.get('x-real-ip');
   if (realIp) {
     return realIp;

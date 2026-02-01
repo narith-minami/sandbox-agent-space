@@ -7,13 +7,10 @@ interface RouteParams {
   params: Promise<{ sessionId: string }>;
 }
 
-export async function GET(
-  request: Request,
-  { params }: RouteParams
-) {
+export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
-    
+
     // Validate session ID
     try {
       validateUUID(sessionId);
@@ -29,7 +26,7 @@ export async function GET(
 
     // Get session with logs
     const result = await getSessionWithLogs(sessionId);
-    
+
     if (!result) {
       return NextResponse.json<ApiError>(
         {
@@ -53,7 +50,7 @@ export async function GET(
         updatedAt: result.session.updatedAt,
         config: result.session.config,
       },
-      logs: result.logs.map(log => ({
+      logs: result.logs.map((log) => ({
         id: log.id,
         timestamp: log.timestamp,
         level: log.level,
@@ -74,7 +71,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Failed to download session logs:', error);
-    
+
     return NextResponse.json<ApiError>(
       {
         error: 'Failed to download session logs',
