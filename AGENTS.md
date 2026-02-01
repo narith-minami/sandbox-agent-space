@@ -19,6 +19,7 @@ pnpm lint             # Run Biome linter
 pnpm format           # Run Biome formatter (write)
 pnpm check            # Run Biome linter + formatter (write)
 pnpm ci               # Run Biome linter + formatter (check mode)
+pnpm typecheck        # Run TypeScript type check (no emit)
 pnpm db:generate      # Generate Drizzle migrations
 pnpm db:push          # Push schema to database
 pnpm db:migrate       # Run migrations
