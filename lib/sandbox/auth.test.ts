@@ -61,7 +61,7 @@ describe('getSandboxTimeout', () => {
   it('should handle non-numeric value gracefully', () => {
     vi.stubEnv('VERCEL_SANDBOX_TIMEOUT_MS', 'invalid');
     const timeout = getSandboxTimeout();
-    expect(timeout).toBe(60000); // NaN becomes 0, then clamped to min
+    expect(timeout).toBeNaN(); // parseInt returns NaN for invalid strings
   });
 });
 

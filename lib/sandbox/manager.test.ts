@@ -218,14 +218,17 @@ describe('SandboxManager', () => {
     it('should extend timeout when sandbox found', async () => {
       const manager = new SandboxManager();
       const mockExtend = vi.fn().mockResolvedValue(undefined);
+      
+      // Create mock sandbox for initial creation
       const mockSandbox = {
         sandboxId: 'sandbox-123',
         status: 'running',
+        timeout: 600000,
         extendTimeout: mockExtend,
       };
 
       const { Sandbox } = await import('@vercel/sandbox');
-      vi.mocked(Sandbox.get).mockResolvedValue(mockSandbox as never);
+      vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
 
       // First create sandbox to add to activeSandboxes
       await manager.createSandbox('session-123', {

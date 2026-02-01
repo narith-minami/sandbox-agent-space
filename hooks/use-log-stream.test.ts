@@ -1,17 +1,25 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLogStream } from './use-log-stream';
+import { createWrapper } from '@/test/react-test-utils';
 
-// Mock EventSource
+// Store EventSource instances for testing
+let eventSourceInstances: MockEventSource[] = [];
+
+// Mock EventSource class
 class MockEventSource {
   onopen: (() => void) | null = null;
   onmessage: ((event: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
   url: string;
   readyState = 0;
+  static CONNECTING = 0;
+  static OPEN = 1;
+  static CLOSED = 2;
 
   constructor(url: string) {
     this.url = url;
+    eventSourceInstances.push(this);
   }
 
   close() {
@@ -34,37 +42,42 @@ class MockEventSource {
 }
 
 describe('useLogStream', () => {
-  let eventSourceInstances: MockEventSource[] = [];
-
   beforeEach(() => {
     eventSourceInstances = [];
     // @ts-expect-error - mocking EventSource
-    global.EventSource = vi.fn().mockImplementation((url: string) => {
-      const instance = new MockEventSource(url);
-      eventSourceInstances.push(instance);
-      return instance;
-    });
+    global.EventSource = MockEventSource;
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Clean up any remaining EventSource instances
+    eventSourceInstances.forEach((instance) => {
+      instance.close();
+    });
+    eventSourceInstances = [];
   });
 
   it('should connect to EventSource when sessionId is provided', () => {
-    renderHook(() => useLogStream('session-123'));
+    renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
-    expect(EventSource).toHaveBeenCalledWith('/api/sandbox/session-123/logs');
     expect(eventSourceInstances).toHaveLength(1);
+    expect(eventSourceInstances[0].url).toBe('/api/sandbox/session-123/logs');
   });
 
   it('should not connect when sessionId is null', () => {
-    renderHook(() => useLogStream(null));
+    renderHook(() => useLogStream(null), {
+      wrapper: createWrapper(),
+    });
 
-    expect(EventSource).not.toHaveBeenCalled();
+    expect(eventSourceInstances).toHaveLength(0);
   });
 
   it('should set isConnected to true on open', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     // Simulate connection open
     eventSourceInstances[0].simulateOpen();
@@ -75,7 +88,9 @@ describe('useLogStream', () => {
   });
 
   it('should add log entries on message', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 
@@ -98,7 +113,9 @@ describe('useLogStream', () => {
   });
 
   it('should handle multiple log messages', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 
@@ -125,7 +142,9 @@ describe('useLogStream', () => {
   });
 
   it('should set isComplete on complete message', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 
@@ -142,7 +161,9 @@ describe('useLogStream', () => {
   });
 
   it('should set error on error message', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 
@@ -160,7 +181,9 @@ describe('useLogStream', () => {
   });
 
   it('should handle connection error', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 
@@ -178,6 +201,7 @@ describe('useLogStream', () => {
       ({ sessionId }) => useLogStream(sessionId),
       {
         initialProps: { sessionId: 'session-123' as string | null },
+        wrapper: createWrapper(),
       }
     );
 
@@ -205,7 +229,9 @@ describe('useLogStream', () => {
   });
 
   it('should handle connected message type', async () => {
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateMessage({
       type: 'connected',
@@ -219,7 +245,9 @@ describe('useLogStream', () => {
   it('should ignore invalid JSON messages', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { result } = renderHook(() => useLogStream('session-123'));
+    const { result } = renderHook(() => useLogStream('session-123'), {
+      wrapper: createWrapper(),
+    });
 
     eventSourceInstances[0].simulateOpen();
 

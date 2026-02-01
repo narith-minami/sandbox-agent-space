@@ -1,42 +1,48 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-// Mock all dependencies before importing the route
+// Create fresh mocks for each test
+const mockCreateSession = vi.fn();
+const mockCheckRateLimit = vi.fn();
+const mockGetClientIp = vi.fn().mockReturnValue('127.0.0.1');
+const mockGetRateLimitHeaders = vi.fn().mockReturnValue({
+  'X-RateLimit-Limit': '100',
+  'X-RateLimit-Remaining': '99',
+});
+const mockGetAuthMethod = vi.fn().mockReturnValue('oidc');
+const mockIsAuthenticationAvailable = vi.fn().mockReturnValue(true);
+const mockCreateSandbox = vi.fn().mockResolvedValue({
+  sandboxId: 'sandbox-123',
+  runtime: 'node24',
+});
+const mockSafeParseSandboxConfig = vi.fn();
+
+// Mock all dependencies
 vi.mock('@/lib/db/queries', () => ({
-  createSession: vi.fn(),
+  createSession: (...args: unknown[]) => mockCreateSession(...args),
 }));
 
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: vi.fn(),
-  getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
-  getRateLimitHeaders: vi.fn().mockReturnValue({
-    'X-RateLimit-Limit': '100',
-    'X-RateLimit-Remaining': '99',
-  }),
+  checkRateLimit: (...args: unknown[]) => mockCheckRateLimit(...args),
+  getClientIp: (...args: unknown[]) => mockGetClientIp(...args),
+  getRateLimitHeaders: (...args: unknown[]) => mockGetRateLimitHeaders(...args),
 }));
 
 vi.mock('@/lib/sandbox/auth', () => ({
-  getAuthMethod: vi.fn().mockReturnValue('oidc'),
-  isAuthenticationAvailable: vi.fn().mockReturnValue(true),
+  getAuthMethod: (...args: unknown[]) => mockGetAuthMethod(...args),
+  isAuthenticationAvailable: (...args: unknown[]) => mockIsAuthenticationAvailable(...args),
 }));
 
 vi.mock('@/lib/sandbox/manager', () => ({
   getSandboxManager: vi.fn().mockReturnValue({
-    createSandbox: vi.fn().mockResolvedValue({
-      sandboxId: 'sandbox-123',
-      runtime: 'node24',
-    }),
+    createSandbox: (...args: unknown[]) => mockCreateSandbox(...args),
   }),
 }));
 
 vi.mock('@/lib/validators/config', () => ({
-  safeParseSandboxConfig: vi.fn(),
+  safeParseSandboxConfig: (...args: unknown[]) => mockSafeParseSandboxConfig(...args),
 }));
 
 import { POST } from './route';
-import { safeParseSandboxConfig } from '@/lib/validators/config';
-import { checkRateLimit } from '@/lib/rate-limit';
-import { createSession } from '@/lib/db/queries';
-import { getSandboxManager } from '@/lib/sandbox/manager';
 
 describe('POST /api/sandbox/create', () => {
   const validConfig = {
@@ -47,6 +53,24 @@ describe('POST /api/sandbox/create', () => {
     opencodeAuthJsonB64: Buffer.from(JSON.stringify({ key: 'value' })).toString('base64'),
     gistUrl: 'https://gist.githubusercontent.com/user/123/raw/script.sh',
   };
+
+  beforeEach(() => {
+    // Reset all mocks before each test
+    vi.clearAllMocks();
+    
+    // Set default mock implementations
+    mockIsAuthenticationAvailable.mockReturnValue(true);
+    mockGetAuthMethod.mockReturnValue('oidc');
+    mockGetRateLimitHeaders.mockReturnValue({
+      'X-RateLimit-Limit': '100',
+      'X-RateLimit-Remaining': '99',
+    });
+    mockGetClientIp.mockReturnValue('127.0.0.1');
+    mockCreateSandbox.mockResolvedValue({
+      sandboxId: 'sandbox-123',
+      runtime: 'node24',
+    });
+  });
 
   function createMockRequest(body: unknown): Request {
     return new Request('http://localhost/api/sandbox/create', {
@@ -66,18 +90,18 @@ describe('POST /api/sandbox/create', () => {
       updatedAt: new Date(),
     };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: validConfig,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
     });
 
-    vi.mocked(createSession).mockResolvedValue(mockSession as never);
+    mockCreateSession.mockResolvedValue(mockSession);
 
     const request = createMockRequest(validConfig);
     const response = await POST(request);
@@ -90,8 +114,7 @@ describe('POST /api/sandbox/create', () => {
   });
 
   it('should return 503 when authentication not available', async () => {
-    const { isAuthenticationAvailable } = await import('@/lib/sandbox/auth');
-    vi.mocked(isAuthenticationAvailable).mockReturnValue(false);
+    mockIsAuthenticationAvailable.mockReturnValue(false);
 
     const request = createMockRequest(validConfig);
     const response = await POST(request);
@@ -102,7 +125,12 @@ describe('POST /api/sandbox/create', () => {
   });
 
   it('should return 429 when rate limit exceeded', async () => {
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
+      success: true,
+      data: validConfig,
+    });
+
+    mockCheckRateLimit.mockResolvedValue({
       success: false,
       remaining: 0,
       reset: Date.now() + 3600000,
@@ -117,14 +145,21 @@ describe('POST /api/sandbox/create', () => {
   });
 
   it('should return 400 for invalid configuration', async () => {
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    // Reset rate limit mock to success to ensure validation error is returned
+    mockCheckRateLimit.mockResolvedValue({
+      success: true,
+      remaining: 99,
+      reset: Date.now() + 3600000,
+    });
+
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: false,
       error: {
         flatten: () => ({
           fieldErrors: { planFile: ['Plan file is required'] },
         }),
       },
-    } as never);
+    });
 
     const request = createMockRequest({ invalid: 'config' });
     const response = await POST(request);
@@ -137,12 +172,12 @@ describe('POST /api/sandbox/create', () => {
   it('should return 400 when GitHub token is missing', async () => {
     const configWithoutToken = { ...validConfig, githubToken: '' };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: configWithoutToken,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -160,12 +195,12 @@ describe('POST /api/sandbox/create', () => {
   it('should return 400 when opencode auth is missing', async () => {
     const configWithoutAuth = { ...validConfig, opencodeAuthJsonB64: '' };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: configWithoutAuth,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -187,12 +222,12 @@ describe('POST /api/sandbox/create', () => {
       snapshotId: undefined,
     };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: configWithoutGist,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -214,12 +249,12 @@ describe('POST /api/sandbox/create', () => {
       snapshotId: 'snap-123',
     };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: configWithSnapshot,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -234,7 +269,7 @@ describe('POST /api/sandbox/create', () => {
       updatedAt: new Date(),
     };
 
-    vi.mocked(createSession).mockResolvedValue(mockSession as never);
+    mockCreateSession.mockResolvedValue(mockSession);
 
     const request = createMockRequest(configWithSnapshot);
     const response = await POST(request);
@@ -245,21 +280,18 @@ describe('POST /api/sandbox/create', () => {
   });
 
   it('should return 401 for authentication errors', async () => {
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: validConfig,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
     });
 
-    const mockManager = {
-      createSandbox: vi.fn().mockRejectedValue(new Error('OIDC authentication failed')),
-    };
-    vi.mocked(getSandboxManager).mockReturnValue(mockManager as never);
+    mockCreateSession.mockRejectedValue(new Error('OIDC authentication failed'));
 
     const request = createMockRequest(validConfig);
     const response = await POST(request);
@@ -270,18 +302,18 @@ describe('POST /api/sandbox/create', () => {
   });
 
   it('should return 500 for internal errors', async () => {
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: validConfig,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
     });
 
-    vi.mocked(createSession).mockRejectedValue(new Error('Database connection failed'));
+    mockCreateSession.mockRejectedValue(new Error('Database connection failed'));
 
     const request = createMockRequest(validConfig);
     const response = await POST(request);
@@ -297,12 +329,12 @@ describe('POST /api/sandbox/create', () => {
       planFile: 'plan.md',
     };
 
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: configWithPartialData,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -317,31 +349,33 @@ describe('POST /api/sandbox/create', () => {
       updatedAt: new Date(),
     };
 
-    vi.mocked(createSession).mockResolvedValue(mockSession as never);
+    mockCreateSession.mockResolvedValue(mockSession);
 
     // Set common env vars
-    process.env.COMMON_GITHUB_TOKEN = 'ghp_common_token';
-    process.env.COMMON_OPENCODE_AUTH_JSON_B64 = Buffer.from(JSON.stringify({ key: 'value' })).toString('base64');
-    process.env.COMMON_GIST_URL = 'https://gist.githubusercontent.com/user/common/raw/script.sh';
+    const originalEnv = process.env;
+    process.env = {
+      ...originalEnv,
+      COMMON_GITHUB_TOKEN: 'ghp_common_token',
+      COMMON_OPENCODE_AUTH_JSON_B64: Buffer.from(JSON.stringify({ key: 'value' })).toString('base64'),
+      COMMON_GIST_URL: 'https://gist.githubusercontent.com/user/common/raw/script.sh',
+    };
 
     const request = createMockRequest(configWithPartialData);
     const response = await POST(request);
 
     expect(response.status).toBe(201);
 
-    // Clean up env vars
-    delete process.env.COMMON_GITHUB_TOKEN;
-    delete process.env.COMMON_OPENCODE_AUTH_JSON_B64;
-    delete process.env.COMMON_GIST_URL;
+    // Restore env vars
+    process.env = originalEnv;
   });
 
   it('should include rate limit headers in response', async () => {
-    vi.mocked(safeParseSandboxConfig).mockReturnValue({
+    mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
       data: validConfig,
-    } as never);
+    });
 
-    vi.mocked(checkRateLimit).mockResolvedValue({
+    mockCheckRateLimit.mockResolvedValue({
       success: true,
       remaining: 99,
       reset: Date.now() + 3600000,
@@ -356,7 +390,13 @@ describe('POST /api/sandbox/create', () => {
       updatedAt: new Date(),
     };
 
-    vi.mocked(createSession).mockResolvedValue(mockSession as never);
+    mockCreateSession.mockResolvedValue(mockSession);
+
+    // Mock the headers to be returned in the response
+    mockGetRateLimitHeaders.mockReturnValue({
+      'X-RateLimit-Limit': '100',
+      'X-RateLimit-Remaining': '99',
+    });
 
     const request = createMockRequest(validConfig);
     const response = await POST(request);
