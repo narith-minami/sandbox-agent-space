@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
@@ -28,43 +29,36 @@ const RUNTIME_OPTIONS = [
   { value: 'python3.13', label: 'Python 3.13', description: 'Latest Python runtime' },
 ] as const;
 
-// Form validation schema with optional common config fields
+// Form schema for react-hook-form
 const formSchema = z.object({
-  planFile: z
-    .string()
-    .min(1, 'Plan file is required')
-    .or(z.literal('')), // Allow empty for snapshot-based sandboxes
-  repoUrl: z
-    .string()
-    .min(1, 'Repository URL is required')
-    .url('Invalid URL format')
-    .or(z.literal('')), // Allow empty for snapshot-based sandboxes
-  repoSlug: z
-    .string()
-    .min(1, 'Repository slug is required')
-    .regex(/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/, 'Format: owner/repo')
-    .or(z.literal('')), // Allow empty for snapshot-based sandboxes
-  memo: z.string().optional(), // Optional memo field
-  gistUrl: z
-    .string()
-    .min(1, 'Gist URL is required')
-    .url('Invalid URL format')
-    .or(z.literal('')), // Allow empty if common config exists
-  frontDir: z
-    .string()
-    .min(1, 'Frontend directory is required'),
-  githubToken: z
-    .string()
-    .min(20, 'GitHub token must be at least 20 characters')
-    .or(z.literal('')), // Allow empty if common config exists
-  opencodeAuthJsonB64: z
-    .string()
-    .min(1, 'OpenCode auth JSON is required')
-    .or(z.literal('')), // Allow empty if common config exists
+  planSource: z.enum(['file', 'text']),
+  planFile: z.string(),
+  planText: z.string(),
+  repoUrl: z.string(),
+  repoSlug: z.string(),
+  baseBranch: z.string(),
+  memo: z.string().optional(),
+  gistUrl: z.string(),
+  frontDir: z.string(),
+  githubToken: z.string(),
+  opencodeAuthJsonB64: z.string(),
   runtime: z.enum(['node24', 'node22', 'python3.13']),
   snapshotId: z.string().optional(),
   enableCodeReview: z.boolean(),
-});
+}).refine(
+  (data) => {
+    // Validate that either planFile or planText is provided based on planSource
+    if (data.planSource === 'file') {
+      return data.planFile && data.planFile.length > 0;
+    } else {
+      return data.planText && data.planText.length > 0;
+    }
+  },
+  {
+    message: 'Plan is required (either file path or text content)',
+    path: ['planFile'],
+  }
+);
 
 export type SandboxConfigFormData = z.infer<typeof formSchema>;
 
@@ -85,9 +79,12 @@ export function ConfigForm({ onSubmit, isLoading = false, defaultValues, commonC
   const form = useForm<SandboxConfigFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      planSource: 'file',
       planFile: '',
+      planText: '',
       repoUrl: '',
       repoSlug: '',
+      baseBranch: 'main',
       memo: '',
       gistUrl: commonConfig?.gistUrl || '',
       frontDir: 'frontend',
@@ -102,6 +99,7 @@ export function ConfigForm({ onSubmit, isLoading = false, defaultValues, commonC
 
   const selectedRuntime = form.watch('runtime');
   const snapshotId = form.watch('snapshotId');
+  const planSource = form.watch('planSource');
   
   // Check if common config provides the required values
   const hasCommonGithubToken = !!(commonConfig?.githubToken || form.watch('githubToken'));
@@ -124,27 +122,76 @@ export function ConfigForm({ onSubmit, isLoading = false, defaultValues, commonC
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* 1. Plan File - TOP PRIORITY */}
+            {/* 1. Plan Source - TOP PRIORITY */}
             {!snapshotId && (
-              <FormField
-                control={form.control}
-                name="planFile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base font-semibold">Plan File</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="docs/plan.md" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Path to the plan file in your repository
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="planSource"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base font-semibold">Plan Source</FormLabel>
+                      <FormControl>
+                        <Tabs
+                          value={field.value}
+                          onValueChange={(value) => field.onChange(value as 'file' | 'text')}
+                          className="w-full"
+                        >
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="file">Use Repository File</TabsTrigger>
+                            <TabsTrigger value="text">Enter Text Directly</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="file" className="mt-4">
+                            <FormField
+                              control={form.control}
+                              name="planFile"
+                              render={({ field: planField }) => (
+                                <FormItem>
+                                  <FormLabel>Plan File Path</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="docs/plan.md" 
+                                      {...planField} 
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Path to the plan file in your repository (e.g., docs/plan.md)
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </TabsContent>
+                          <TabsContent value="text" className="mt-4">
+                            <FormField
+                              control={form.control}
+                              name="planText"
+                              render={({ field: textField }) => (
+                                <FormItem>
+                                  <FormLabel>Plan Text</FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Enter your plan content here in Markdown format..."
+                                      rows={10}
+                                      className="font-mono text-sm"
+                                      {...textField} 
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Your plan content will be saved as a Markdown file in the sandbox
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </TabsContent>
+                        </Tabs>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
 
             {/* 2. Repository Information */}
@@ -186,6 +233,26 @@ export function ConfigForm({ onSubmit, isLoading = false, defaultValues, commonC
                       </FormControl>
                       <FormDescription>
                         Repository identifier in owner/repo format
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="baseBranch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Base Branch</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="main" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Git branch to clone (default: main)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

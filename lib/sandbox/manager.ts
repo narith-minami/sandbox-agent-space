@@ -9,6 +9,8 @@ export interface SandboxCreateOptions {
   command: string;
   runtime?: SandboxRuntime;
   snapshotId?: string;
+  planText?: string;
+  planFilePath?: string;
 }
 
 export interface SandboxStatus {
@@ -77,11 +79,12 @@ export class SandboxManager {
         // Create with Git source
         const repoUrl = options.env.REPO_URL;
         const githubToken = options.env.GITHUB_TOKEN;
+        const baseBranch = options.env.BASE_BRANCH || 'main';
 
         await addLog({
           sessionId,
           level: 'info',
-          message: `Cloning repository: ${options.env.REPO_SLUG || repoUrl}`,
+          message: `Cloning repository: ${options.env.REPO_SLUG || repoUrl} (branch: ${baseBranch})`,
         });
 
         sandbox = await Sandbox.create({
@@ -93,6 +96,7 @@ export class SandboxManager {
             username: 'x-access-token',
             password: githubToken,
             depth: 1, // Shallow clone for faster setup
+            revision: baseBranch,
           },
         });
       } else {
@@ -155,6 +159,65 @@ export class SandboxManager {
         level: 'info',
         message: `Executing command in sandbox ${sandbox.sandboxId}`,
       });
+
+      // Write plan text to file if provided
+      console.log('[DEBUG MANAGER] options.planText exists:', !!options.planText);
+      console.log('[DEBUG MANAGER] options.planFilePath:', options.planFilePath);
+      console.log('[DEBUG MANAGER] planText length:', options.planText?.length || 0);
+      
+      if (options.planText && options.planFilePath) {
+        // Use the absolute path directly (planFilePath is already absolute from API)
+        const absolutePlanPath = options.planFilePath;
+        
+        await addLog({
+          sessionId,
+          level: 'info',
+          message: `[DEBUG] Writing plan text to ${absolutePlanPath} (length: ${options.planText.length})`,
+        });
+
+        try {
+          // Ensure parent directory exists
+          const dirPath = absolutePlanPath.substring(0, absolutePlanPath.lastIndexOf('/'));
+          console.log('[DEBUG MANAGER] Creating directory:', dirPath);
+          
+          if (dirPath) {
+            const mkdirResult = await sandbox.runCommand('mkdir', ['-p', dirPath]);
+            console.log('[DEBUG MANAGER] mkdir result:', mkdirResult.exitCode);
+          }
+
+          // Write plan text as file
+          console.log('[DEBUG MANAGER] Writing file...');
+          await sandbox.writeFiles([{
+            path: absolutePlanPath,
+            content: Buffer.from(options.planText, 'utf-8'),
+          }]);
+
+          // Verify file was written
+          const lsResult = await sandbox.runCommand('ls', ['-la', absolutePlanPath]);
+          console.log('[DEBUG MANAGER] File created:', lsResult.exitCode, await lsResult.stdout());
+          
+          // Check file content
+          const catResult = await sandbox.runCommand('cat', [absolutePlanPath]);
+          const content = await catResult.stdout();
+          console.log('[DEBUG MANAGER] File content length:', content.length);
+          console.log('[DEBUG MANAGER] File content preview:', content.substring(0, 100));
+
+          await addLog({
+            sessionId,
+            level: 'info',
+            message: `[DEBUG] Plan file created successfully at ${absolutePlanPath}`,
+          });
+        } catch (error) {
+          console.error('[DEBUG MANAGER] Error writing plan file:', error);
+          await addLog({
+            sessionId,
+            level: 'error',
+            message: `[DEBUG] Failed to write plan file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          });
+        }
+      } else {
+        console.log('[DEBUG MANAGER] Skipping plan file creation - planText or planFilePath missing');
+      }
 
       // Log environment variables (masked)
       const envKeys = Object.keys(options.env);

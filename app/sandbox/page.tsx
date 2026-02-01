@@ -13,6 +13,7 @@ import { useLogStream } from '@/hooks/use-log-stream';
 import { useCommonConfig } from '@/hooks/use-common-config';
 import { getLastUsedValues, saveLastUsedValues } from '@/lib/storage';
 import { Loader2 } from 'lucide-react';
+import type { SandboxConfig } from '@/types/sandbox';
 
 function SandboxPageContent() {
   const router = useRouter();
@@ -33,11 +34,14 @@ function SandboxPageContent() {
     if (cloneSession && !defaultValues) {
       const config = cloneSession.config;
       setDefaultValues({
+        planSource: config.planSource || 'file',
+        planFile: config.planFile || '',
+        planText: config.planText || '',
         gistUrl: config.gistUrl,
         repoUrl: config.repoUrl,
         repoSlug: config.repoSlug,
+        baseBranch: config.baseBranch || 'main',
         frontDir: config.frontDir,
-        planFile: config.planFile,
         githubToken: '', // Don't clone sensitive data
         opencodeAuthJsonB64: '', // Don't clone sensitive data
         runtime: config.runtime || 'node24',
@@ -52,10 +56,13 @@ function SandboxPageContent() {
       // Load from localStorage if not cloning
       const lastUsed = getLastUsedValues();
       setDefaultValues({
+        planSource: 'file',
+        planFile: lastUsed.planFile || '',
+        planText: '',
         repoUrl: lastUsed.repoUrl || '',
         repoSlug: lastUsed.repoSlug || '',
+        baseBranch: lastUsed.baseBranch,
         frontDir: lastUsed.frontDir,
-        planFile: lastUsed.planFile || '',
         githubToken: '',
         opencodeAuthJsonB64: '',
         gistUrl: '',
@@ -68,15 +75,32 @@ function SandboxPageContent() {
 
   const handleSubmit = async (data: SandboxConfigFormData) => {
     try {
-      // Save to localStorage for next time
+      // Save to localStorage for next time (only save planFile when using file mode)
       saveLastUsedValues({
         repoUrl: data.repoUrl,
         repoSlug: data.repoSlug,
+        baseBranch: data.baseBranch,
         frontDir: data.frontDir,
-        planFile: data.planFile,
+        planFile: data.planSource === 'file' ? data.planFile : '',
       });
 
-      const result = await createSandbox.mutateAsync(data);
+      // Convert form data to SandboxConfig
+      const config: SandboxConfig = {
+        planSource: data.planSource,
+        planFile: data.planFile,
+        planText: data.planText,
+        gistUrl: data.gistUrl,
+        repoUrl: data.repoUrl,
+        repoSlug: data.repoSlug,
+        baseBranch: data.baseBranch,
+        frontDir: data.frontDir,
+        githubToken: data.githubToken,
+        opencodeAuthJsonB64: data.opencodeAuthJsonB64,
+        runtime: data.runtime,
+        snapshotId: data.snapshotId,
+      };
+
+      const result = await createSandbox.mutateAsync(config);
       setSessionId(result.sessionId);
       
       // Clear clone parameter from URL

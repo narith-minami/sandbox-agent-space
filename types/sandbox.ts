@@ -5,8 +5,12 @@ export interface SandboxConfig {
   gistUrl: string;
   repoUrl: string;
   repoSlug: string;
+  baseBranch: string;
   frontDir: string;
+  // Plan source: either file path or direct text
   planFile: string;
+  planText: string;
+  planSource: 'file' | 'text';
   githubToken: string;
   opencodeAuthJsonB64: string;
   // New: runtime selection
@@ -144,6 +148,8 @@ export interface SandboxCreateOptions {
   command?: string;
   args?: string[];
   cwd?: string;
+  planText?: string;
+  planFilePath?: string;
 }
 
 // Command execution options

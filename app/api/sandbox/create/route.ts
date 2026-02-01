@@ -102,6 +102,15 @@ export async function POST(request: Request) {
     // Create session in database with runtime and memo (prUrl will be auto-detected from logs)
     const session = await createSession(config, runtime, undefined, config.memo);
 
+    // Determine plan file path based on plan source
+    // Use absolute path for PLAN_FILE so Gist script can access it directly
+    const frontDir = config.frontDir || 'frontend';
+    const planFileName = config.planSource === 'text' 
+      ? `plan.md`
+      : config.planFile?.split('/').pop() || 'plan.md';
+    // Absolute path to plan file in sandbox (not in repo)
+    const planFilePath = `/vercel/sandbox/${frontDir}/docs/${planFileName}`;
+
     // Start sandbox using Vercel Sandbox SDK
     const sandboxManager = getSandboxManager();
     const result = await sandboxManager.createSandbox(session.id, {
@@ -111,8 +120,9 @@ export async function POST(request: Request) {
         GIST_URL: gistUrl,
         REPO_URL: config.repoUrl,
         REPO_SLUG: config.repoSlug,
+        BASE_BRANCH: config.baseBranch || 'main',
         FRONT_DIR: config.frontDir,
-        PLAN_FILE: config.planFile,
+        PLAN_FILE: planFilePath,
         ENABLE_CODE_REVIEW: config.enableCodeReview ? '1' : '0',
       },
       command: `
@@ -122,6 +132,8 @@ export async function POST(request: Request) {
       `,
       runtime,
       snapshotId: config.snapshotId,
+      planText: config.planSource === 'text' ? config.planText : undefined,
+      planFilePath,
     });
 
     return NextResponse.json<CreateSandboxResponse>(

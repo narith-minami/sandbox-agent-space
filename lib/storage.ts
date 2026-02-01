@@ -5,6 +5,7 @@
 const STORAGE_KEYS = {
   LAST_REPO_URL: 'sandbox_last_repo_url',
   LAST_REPO_SLUG: 'sandbox_last_repo_slug',
+  LAST_BASE_BRANCH: 'sandbox_last_base_branch',
   LAST_FRONT_DIR: 'sandbox_last_front_dir',
   LAST_PLAN_FILE: 'sandbox_last_plan_file',
 } as const;
@@ -15,6 +16,7 @@ const STORAGE_KEYS = {
 export function saveLastUsedValues(values: {
   repoUrl?: string;
   repoSlug?: string;
+  baseBranch?: string;
   frontDir?: string;
   planFile?: string;
 }) {
@@ -26,6 +28,9 @@ export function saveLastUsedValues(values: {
     }
     if (values.repoSlug) {
       localStorage.setItem(STORAGE_KEYS.LAST_REPO_SLUG, values.repoSlug);
+    }
+    if (values.baseBranch) {
+      localStorage.setItem(STORAGE_KEYS.LAST_BASE_BRANCH, values.baseBranch);
     }
     if (values.frontDir) {
       localStorage.setItem(STORAGE_KEYS.LAST_FRONT_DIR, values.frontDir);
@@ -44,23 +49,25 @@ export function saveLastUsedValues(values: {
 export function getLastUsedValues(): {
   repoUrl?: string;
   repoSlug?: string;
+  baseBranch: string;
   frontDir: string;
   planFile?: string;
 } {
   if (typeof window === 'undefined') {
-    return { frontDir: 'frontend' };
+    return { baseBranch: 'main', frontDir: 'frontend' };
   }
 
   try {
     return {
       repoUrl: localStorage.getItem(STORAGE_KEYS.LAST_REPO_URL) || undefined,
       repoSlug: localStorage.getItem(STORAGE_KEYS.LAST_REPO_SLUG) || undefined,
+      baseBranch: localStorage.getItem(STORAGE_KEYS.LAST_BASE_BRANCH) || 'main',
       frontDir: localStorage.getItem(STORAGE_KEYS.LAST_FRONT_DIR) || 'frontend',
       planFile: localStorage.getItem(STORAGE_KEYS.LAST_PLAN_FILE) || undefined,
     };
   } catch (error) {
     console.error('Failed to read from localStorage:', error);
-    return { frontDir: 'frontend' };
+    return { baseBranch: 'main', frontDir: 'frontend' };
   }
 }
 

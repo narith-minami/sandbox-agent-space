@@ -32,6 +32,9 @@ const isGitHubRepoUrl = (url: string) => {
 // Runtime options
 export const SandboxRuntimeSchema = z.enum(['node24', 'node22', 'python3.13']);
 
+// Plan source type
+export const PlanSourceSchema = z.enum(['file', 'text']);
+
 // Sandbox configuration schema with Zod v4
 // Fields can be empty if common config environment variables are set
 export const SandboxConfigSchema = z.object({
@@ -55,6 +58,13 @@ export const SandboxConfigSchema = z.object({
     .optional()
     .default(''),
   
+  baseBranch: z
+    .string()
+    .min(1, 'Base branch is required')
+    .refine((val) => !val.includes('..'), 'Invalid branch name')
+    .refine((val) => !val.includes(' '), 'Branch name cannot contain spaces')
+    .default('main'),
+  
   frontDir: z
     .string()
     .min(1, 'Frontend directory is required')
@@ -62,12 +72,20 @@ export const SandboxConfigSchema = z.object({
     .refine((val) => !val.startsWith('/'), 'Absolute paths are not allowed')
     .default('frontend'),
   
+  // Plan source: 'file' or 'text'
+  planSource: PlanSourceSchema.default('file'),
+  
+  // Plan file path (used when planSource is 'file')
+  // Can be relative path (from FRONT_DIR) or absolute path
   planFile: z
     .string()
     .refine((val) => !val || !val.includes('..'), 'Path traversal is not allowed')
     .refine((val) => !val || val.endsWith('.md') || val.endsWith('.txt'), 'Plan file must be .md or .txt')
     .optional()
     .default(''),
+  
+  // Plan text content (used when planSource is 'text')
+  planText: z.string().optional().default(''),
   
   githubToken: z
     .string()
@@ -103,7 +121,20 @@ export const SandboxConfigSchema = z.object({
   
   // New: optional memo field
   memo: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // Validate that either planFile or planText is provided based on planSource
+    if (data.planSource === 'file') {
+      return data.planFile && data.planFile.length > 0;
+    } else {
+      return data.planText && data.planText.length > 0;
+    }
+  },
+  {
+    message: 'Plan file path or plan text is required',
+    path: ['planFile'],
+  }
+);
 
 export type ValidatedSandboxConfig = z.infer<typeof SandboxConfigSchema>;
 

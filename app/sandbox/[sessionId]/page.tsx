@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, RefreshCw, Clock, GitBranch, FileText, ExternalLink, Copy, StickyNote } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, GitBranch, FileText, ExternalLink, Copy, StickyNote, Download } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ sessionId: string }>;
@@ -63,6 +63,27 @@ export default function SessionDetailPage({ params }: PageProps) {
     minute: '2-digit',
     second: '2-digit',
   });
+
+  const handleDownloadLogs = async () => {
+    try {
+      const response = await fetch(`/api/sandbox/${sessionId}/logs/download`);
+      if (!response.ok) {
+        throw new Error('Failed to download logs');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `session-${sessionId}-logs.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to download logs:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -198,11 +219,21 @@ export default function SessionDetailPage({ params }: PageProps) {
 
         {/* Logs */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Execution Logs</CardTitle>
-            <CardDescription>
-              {session.logs.length} log entries
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Execution Logs</CardTitle>
+              <CardDescription>
+                {session.logs.length} log entries
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadLogs}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download JSON
+            </Button>
           </CardHeader>
           <CardContent>
             <LogViewer 
