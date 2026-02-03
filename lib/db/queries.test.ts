@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { SandboxRuntime } from '@/lib/sandbox/auth';
+import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
 import {
   addLog,
   archiveSession,
