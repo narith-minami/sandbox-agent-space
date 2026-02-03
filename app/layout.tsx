@@ -1,4 +1,3 @@
-import { Geist, Geist_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { AuthStatus } from '@/components/auth/auth-status';
 import { QueryProvider } from '@/components/providers/query-provider';
@@ -6,15 +5,17 @@ import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 import type { Metadata } from 'next';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+// Temporarily disabled Google Fonts for build environment
+// Will load fonts at runtime via CSS
+// import { Geist, Geist_Mono } from 'next/font/google';
+// const geistSans = Geist({
+//   variable: '--font-geist-sans',
+//   subsets: ['latin'],
+// });
+// const geistMono = Geist_Mono({
+//   variable: '--font-geist-mono',
+//   subsets: ['latin'],
+// });
 
 export const metadata: Metadata = {
   title: 'Coding Agent Sandbox',
@@ -28,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='ja'>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className='antialiased'>
         <QueryProvider>
           <div className='min-h-screen bg-background'>
             <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>

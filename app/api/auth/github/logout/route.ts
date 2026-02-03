@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import {
   decodeSessionId,
@@ -12,7 +13,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'GitHub認証が無効です。' }, { status: 404 });
   }
 
-  const sessionValue = request.cookies.get(getGitHubAuthSessionCookieName())?.value;
+  const cookieStore = await cookies();
+  const sessionValue = cookieStore.get(getGitHubAuthSessionCookieName())?.value;
   if (sessionValue) {
     const sessionId = await decodeSessionId(sessionValue, getGitHubSessionSecret());
     if (sessionId) {
