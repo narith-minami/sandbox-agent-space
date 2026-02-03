@@ -7,8 +7,8 @@ import {
   SessionArchiveSchema,
   SessionListFilterSchema,
   SnapshotIdSchema,
-  UUIDSchema,
   safeParseSandboxConfig,
+  UUIDSchema,
   validateSandboxConfig,
   validateSnapshotId,
   validateUUID,
@@ -683,9 +683,7 @@ describe('SessionListFilterSchema', () => {
   });
 
   it('should reject invalid status', () => {
-    expect(() =>
-      SessionListFilterSchema.parse({ status: ['invalid'] })
-    ).toThrow();
+    expect(() => SessionListFilterSchema.parse({ status: ['invalid'] })).toThrow();
   });
 });
 

@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useSessionList } from './use-session-list';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWrapper, renderHook, waitFor } from '@/test/react-test-utils';
+import { useSessionList } from './use-session-list';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -101,16 +101,13 @@ describe('useSessionList', () => {
       json: () => Promise.resolve(mockResponse),
     });
 
-    const { result } = renderHook(
-      () => useSessionList({ filters: { archived: true } }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useSessionList({ filters: { archived: true } }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      '/api/sessions?page=1&limit=20&archived=true'
-    );
+    expect(mockFetch).toHaveBeenCalledWith('/api/sessions?page=1&limit=20&archived=true');
   });
 
   it('should handle API error', async () => {

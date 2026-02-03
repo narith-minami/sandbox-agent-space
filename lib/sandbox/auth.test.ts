@@ -133,9 +133,7 @@ describe('requireAuthentication', () => {
   it('should throw when no authentication is available', () => {
     vi.stubEnv('VERCEL_OIDC_TOKEN', '');
     vi.stubEnv('VERCEL_ACCESS_TOKEN', '');
-    expect(() => requireAuthentication()).toThrow(
-      'Vercel Sandbox authentication not configured'
-    );
+    expect(() => requireAuthentication()).toThrow('Vercel Sandbox authentication not configured');
   });
 
   it('should throw with helpful message', () => {

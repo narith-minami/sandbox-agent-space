@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useCommonConfig } from './use-common-config';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWrapper, renderHook, waitFor } from '@/test/react-test-utils';
+import { useCommonConfig } from './use-common-config';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;

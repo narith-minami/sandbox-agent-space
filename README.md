@@ -32,7 +32,7 @@ cd sandbox-agent-space
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Set up environment variables:
@@ -59,12 +59,12 @@ Authentication is automatic via `VERCEL_OIDC_TOKEN`.
 
 5. Initialize the database:
 ```bash
-npm run db:push
+pnpm run db:push
 ```
 
 6. Run the development server:
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
@@ -140,13 +140,13 @@ Restore from snapshot:
 
 ```bash
 # Generate migration after schema changes
-npm run db:generate
+pnpm run db:generate
 
 # Apply schema changes to database
-npm run db:push
+pnpm run db:push
 
 # Open Drizzle Studio (database GUI)
-npm run db:studio
+pnpm run db:studio
 ```
 
 ## API Routes
@@ -229,20 +229,46 @@ Every session can be cloned with one click:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Run dev server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Start production server
-npm start
+pnpm start
+
+# Lint & format code (check mode)
+pnpm run ci
+
+# Lint & format code (write mode)
+pnpm run check
 
 # Type checking
-npm run type-check
+pnpm run typecheck
+
+# Run tests
+pnpm run test
+
+# Run all CI checks (lint, typecheck, build, test)
+pnpm run ci:all
 ```
+
+## Continuous Integration
+
+This project uses GitHub Actions for automated CI checks. The workflow runs on:
+- Push to `main`/`master` branches
+- Pull requests to `main`/`master` branches
+
+The CI pipeline includes:
+1. **Lint** - Code quality checks with Biome
+2. **Type Check** - TypeScript type checking
+3. **Test** - Unit tests with Vitest
+4. **Build** - Next.js production build
+
+See `.github/workflows/ci.yml` for the full configuration.
 
 ## Deployment
 

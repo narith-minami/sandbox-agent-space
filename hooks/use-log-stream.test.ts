@@ -1,7 +1,7 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { useLogStream } from './use-log-stream';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWrapper } from '@/test/react-test-utils';
+import { useLogStream } from './use-log-stream';
 
 // Store EventSource instances for testing
 let eventSourceInstances: MockEventSource[] = [];
@@ -221,13 +221,10 @@ describe('useLogStream', () => {
   });
 
   it('should reset state when sessionId becomes null', async () => {
-    const { result, rerender } = renderHook(
-      ({ sessionId }) => useLogStream(sessionId),
-      {
-        initialProps: { sessionId: 'session-123' as string | null },
-        wrapper: createWrapper(),
-      }
-    );
+    const { result, rerender } = renderHook(({ sessionId }) => useLogStream(sessionId), {
+      initialProps: { sessionId: 'session-123' as string | null },
+      wrapper: createWrapper(),
+    });
 
     await act(async () => {
       eventSourceInstances[0].simulateOpen();
