@@ -68,7 +68,12 @@ async function signValue(payload: string, secret: string): Promise<string> {
 async function verifyValue(payload: string, signature: string, secret: string): Promise<boolean> {
   const key = await getHmacKey(secret);
   const signatureBytes = base64UrlDecodeBytes(signature);
-  return crypto.subtle.verify('HMAC', key, signatureBytes, new TextEncoder().encode(payload));
+  return crypto.subtle.verify(
+    'HMAC',
+    key,
+    new Uint8Array(signatureBytes),
+    new TextEncoder().encode(payload)
+  );
 }
 
 export function getGitHubAuthSessionCookieName(): string {
