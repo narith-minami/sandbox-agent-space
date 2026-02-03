@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { GitHubSessionData } from '@/lib/auth/github';
 import {
   decodeSessionId,
   getGitHubAuthSessionCookieName,
@@ -7,7 +8,6 @@ import {
   isGitHubAuthEnabled,
 } from '@/lib/auth/github';
 import { getGitHubSession } from '@/lib/auth/github-session-store';
-import type { GitHubSessionData } from '@/lib/auth/github';
 
 export interface RequireGitHubSessionResult {
   sessionId: string;

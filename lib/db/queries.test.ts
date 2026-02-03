@@ -19,8 +19,6 @@ import {
   updateSession,
   updateSnapshotStatus,
 } from './queries';
-import type { SandboxRuntime } from '@/lib/sandbox/auth';
-import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
 import type { Log, Session, SnapshotRecord } from './schema';
 
 // Helper to create a mock session with all required fields
