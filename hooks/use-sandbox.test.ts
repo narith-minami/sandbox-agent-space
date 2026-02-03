@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useSandboxCreate, useSession, useSessionStatus } from './use-sandbox';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWrapper, renderHook, waitFor } from '@/test/react-test-utils';
+import { useSandboxCreate, useSession, useSessionStatus } from './use-sandbox';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -150,7 +150,9 @@ describe('useSessionStatus', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockStatus);
-    expect(mockFetch).toHaveBeenCalledWith('/api/sandbox/550e8400-e29b-41d4-a716-446655440000/status');
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/sandbox/550e8400-e29b-41d4-a716-446655440000/status'
+    );
   });
 
   it('should not fetch when sessionId is null', () => {
