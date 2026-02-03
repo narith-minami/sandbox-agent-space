@@ -50,10 +50,13 @@ function base64UrlDecodeString(value: string): string {
 }
 
 async function getHmacKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
-    'sign',
-    'verify',
-  ]);
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
 }
 
 async function signValue(payload: string, secret: string): Promise<string> {
@@ -145,7 +148,10 @@ export async function decodeState(value: string, secret: string): Promise<string
   return state.nextPath;
 }
 
-export function buildGitHubSessionData(accessToken: string, user: GitHubSessionUser): GitHubSessionData {
+export function buildGitHubSessionData(
+  accessToken: string,
+  user: GitHubSessionUser
+): GitHubSessionData {
   const issuedAt = Date.now();
   return {
     accessToken,

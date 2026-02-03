@@ -30,7 +30,10 @@ function isSessionExpired(session: GitHubSessionData): boolean {
   return session.expiresAt <= Date.now();
 }
 
-export async function createGitHubSession(sessionId: string, session: GitHubSessionData): Promise<void> {
+export async function createGitHubSession(
+  sessionId: string,
+  session: GitHubSessionData
+): Promise<void> {
   const redis = getRedisClient();
   if (!redis) {
     inMemorySessions.set(sessionId, session);

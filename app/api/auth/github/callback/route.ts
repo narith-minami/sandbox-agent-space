@@ -3,11 +3,11 @@ import {
   buildGitHubSessionData,
   decodeState,
   encodeSessionId,
+  getGitHubAuthSessionCookieName,
   getGitHubClientId,
   getGitHubClientSecret,
   getGitHubSessionMaxAgeSeconds,
   getGitHubSessionSecret,
-  getGitHubAuthSessionCookieName,
   isGitHubAuthEnabled,
   sanitizeNextPath,
 } from '@/lib/auth/github';
@@ -75,7 +75,10 @@ export async function GET(request: Request): Promise<NextResponse> {
   });
 
   if (!userResponse.ok) {
-    return NextResponse.json({ error: 'GitHubユーザー情報の取得に失敗しました。' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'GitHubユーザー情報の取得に失敗しました。' },
+      { status: 401 }
+    );
   }
 
   const userData = (await userResponse.json()) as GitHubUserResponse;
@@ -90,13 +93,17 @@ export async function GET(request: Request): Promise<NextResponse> {
   await createGitHubSession(sessionId, sessionData);
 
   const response = NextResponse.redirect(`${url.origin}${nextPath}`);
-  response.cookies.set(getGitHubAuthSessionCookieName(), await encodeSessionId(sessionId, sessionSecret), {
-    httpOnly: true,
-    maxAge: getGitHubSessionMaxAgeSeconds(),
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  response.cookies.set(
+    getGitHubAuthSessionCookieName(),
+    await encodeSessionId(sessionId, sessionSecret),
+    {
+      httpOnly: true,
+      maxAge: getGitHubSessionMaxAgeSeconds(),
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    }
+  );
 
   return response;
 }

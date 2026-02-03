@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   decodeSessionId,
@@ -16,7 +16,9 @@ export async function AuthStatus() {
 
   const cookieStore = await cookies();
   const sessionValue = cookieStore.get(getGitHubAuthSessionCookieName())?.value;
-  const sessionId = sessionValue ? await decodeSessionId(sessionValue, getGitHubSessionSecret()) : null;
+  const sessionId = sessionValue
+    ? await decodeSessionId(sessionValue, getGitHubSessionSecret())
+    : null;
   const session = sessionId ? await getGitHubSession(sessionId) : null;
 
   if (!session) {

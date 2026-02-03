@@ -14,7 +14,9 @@ export interface RequireGitHubSessionResult {
   session: GitHubSessionData;
 }
 
-export async function requireGitHubSession(nextPath: string): Promise<RequireGitHubSessionResult | null> {
+export async function requireGitHubSession(
+  nextPath: string
+): Promise<RequireGitHubSessionResult | null> {
   if (!isGitHubAuthEnabled()) {
     return null;
   }

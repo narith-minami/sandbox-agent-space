@@ -1,6 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
-import type { SandboxRuntime } from '@/lib/sandbox/auth';
 import {
   addLog,
   archiveSession,
@@ -19,6 +17,8 @@ import {
   updateSession,
   updateSnapshotStatus,
 } from './queries';
+import type { SandboxRuntime } from '@/lib/sandbox/auth';
+import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
 import type { Log, Session, SnapshotRecord } from './schema';
 
 // Helper to create a mock session with all required fields
@@ -600,10 +600,7 @@ describe('archiveSession', () => {
         }) as unknown as ReturnType<typeof db.update>
     );
 
-    const result = await archiveSession(
-      '550e8400-e29b-41d4-a716-446655440000',
-      true
-    );
+    const result = await archiveSession('550e8400-e29b-41d4-a716-446655440000', true);
     expect(result?.archived).toBe(true);
   });
 
@@ -625,10 +622,7 @@ describe('archiveSession', () => {
         }) as unknown as ReturnType<typeof db.update>
     );
 
-    const result = await archiveSession(
-      '550e8400-e29b-41d4-a716-446655440000',
-      false
-    );
+    const result = await archiveSession('550e8400-e29b-41d4-a716-446655440000', false);
     expect(result?.archived).toBe(false);
   });
 });
@@ -748,9 +742,7 @@ describe('getSnapshotsBySessionId', () => {
         }) as unknown as ReturnType<typeof db.select>
     );
 
-    const result = await getSnapshotsBySessionId(
-      '550e8400-e29b-41d4-a716-446655440001'
-    );
+    const result = await getSnapshotsBySessionId('550e8400-e29b-41d4-a716-446655440001');
     expect(result).toHaveLength(2);
     expect(result[0].snapshotId).toBe('snap-1');
     expect(result[1].snapshotId).toBe('snap-2');

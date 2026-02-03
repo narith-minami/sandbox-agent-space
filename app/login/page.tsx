@@ -17,15 +17,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <div className='space-y-2'>
         <h1 className='text-2xl font-semibold'>GitHub認証</h1>
         <p className='text-sm text-muted-foreground'>
-          {isEnabled
-            ? '続行するにはGitHubでログインしてください。'
-            : '現在GitHub認証は無効です。'}
+          {isEnabled ? '続行するにはGitHubでログインしてください。' : '現在GitHub認証は無効です。'}
         </p>
       </div>
       <div className='flex flex-col gap-3'>
         {isEnabled ? (
           <Button asChild className='w-full'>
-            <Link href={`/api/auth/github?next=${encodeURIComponent(nextPath)}`}>GitHubでログイン</Link>
+            <Link href={`/api/auth/github?next=${encodeURIComponent(nextPath)}`}>
+              GitHubでログイン
+            </Link>
           </Button>
         ) : (
           <Button className='w-full' disabled>

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { POST } from './route';
 
 // Create fresh mocks for each test
 const mockCreateSession = vi.fn();
@@ -42,8 +43,6 @@ vi.mock('@/lib/validators/config', () => ({
   safeParseSandboxConfig: (...args: unknown[]) => mockSafeParseSandboxConfig(...args),
 }));
 
-import { POST } from './route';
-
 describe('POST /api/sandbox/create', () => {
   const validConfig = {
     planSource: 'file',
@@ -57,7 +56,7 @@ describe('POST /api/sandbox/create', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     vi.clearAllMocks();
-    
+
     // Set default mock implementations
     mockIsAuthenticationAvailable.mockReturnValue(true);
     mockGetAuthMethod.mockReturnValue('oidc');
@@ -356,7 +355,9 @@ describe('POST /api/sandbox/create', () => {
     process.env = {
       ...originalEnv,
       COMMON_GITHUB_TOKEN: 'ghp_common_token',
-      COMMON_OPENCODE_AUTH_JSON_B64: Buffer.from(JSON.stringify({ key: 'value' })).toString('base64'),
+      COMMON_OPENCODE_AUTH_JSON_B64: Buffer.from(JSON.stringify({ key: 'value' })).toString(
+        'base64'
+      ),
       COMMON_GIST_URL: 'https://gist.githubusercontent.com/user/common/raw/script.sh',
     };
 
