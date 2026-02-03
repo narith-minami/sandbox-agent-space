@@ -1,6 +1,6 @@
 import { Redis } from '@upstash/redis';
-import { getGitHubAuthSessionMaxAgeSeconds } from '@/lib/auth/github';
 import type { GitHubSessionData } from '@/lib/auth/github';
+import { getGitHubAuthSessionMaxAgeSeconds } from '@/lib/auth/github';
 
 const SESSION_PREFIX = 'github_session:';
 const inMemorySessions = new Map<string, GitHubSessionData>();
