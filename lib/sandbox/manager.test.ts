@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  getSandboxManager,
-  SandboxManager,
-} from './manager';
+import { getSandboxManager, SandboxManager } from './manager';
 
 // Mock dependencies
 vi.mock('@/lib/db/queries', () => ({
@@ -227,7 +224,7 @@ describe('SandboxManager', () => {
     it('should extend timeout when sandbox found', async () => {
       const manager = new SandboxManager();
       const mockExtend = vi.fn().mockResolvedValue(undefined);
-      
+
       // Create mock sandbox for initial creation
       const mockSandbox = {
         sandboxId: 'sandbox-123',
@@ -328,8 +325,10 @@ describe('SandboxManager', () => {
       const { setSessionStatus, addLog } = await import('@/lib/db/queries');
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
-      vi.spyOn(manager as unknown as { executeCommand: () => Promise<void> }, 'executeCommand')
-        .mockResolvedValue();
+      vi.spyOn(
+        manager as unknown as { executeCommand: () => Promise<void> },
+        'executeCommand'
+      ).mockResolvedValue();
 
       await manager.createSandbox('session-123', {
         env: {},

@@ -13,7 +13,7 @@ const redisMocks = vi.hoisted(() => {
 vi.mock('@upstash/redis', () => {
   class RedisMock {
     constructor() {
-      return redisMocks;
+      Object.assign(this, redisMocks);
     }
   }
 
