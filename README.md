@@ -256,6 +256,20 @@ pnpm run test
 pnpm run ci:all
 ```
 
+## Continuous Integration
+
+This project uses GitHub Actions for automated CI checks. The workflow runs on:
+- Push to `main`/`master` branches
+- Pull requests to `main`/`master` branches
+
+The CI pipeline includes:
+1. **Lint** - Code quality checks with Biome
+2. **Type Check** - TypeScript type checking
+3. **Test** - Unit tests with Vitest
+4. **Build** - Next.js production build
+
+See `.github/workflows/ci.yml` for the full configuration.
+
 ## Deployment
 
 ### Deploy to Vercel (Recommended)

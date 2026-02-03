@@ -49,6 +49,8 @@ jobs:
       - name: Run lint (Biome)
         run: pnpm run ci
 
+      # Note: Type check has pre-existing errors in test files
+      # continue-on-error allows other checks to complete
       - name: Run type check
         run: pnpm run typecheck
         continue-on-error: true
@@ -59,6 +61,8 @@ jobs:
           DATABASE_URL: 'file:./test.db'
           VERCEL_OIDC_TOKEN: 'test_token'
 
+      # Note: Build may fail due to network issues (Google Fonts)
+      # continue-on-error allows tests to run even if build fails
       - name: Build
         run: pnpm run build
         env:
