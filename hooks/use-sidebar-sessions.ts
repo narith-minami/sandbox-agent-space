@@ -25,6 +25,10 @@ export function useSidebarSessions(filters: SidebarFilters) {
         params.append('status', filters.status.join(','));
       }
 
+      if (filters.prStatus && filters.prStatus.length > 0) {
+        params.append('prStatus', filters.prStatus.join(','));
+      }
+
       const response = await fetch(`/api/sessions?${params}`);
       if (!response.ok) {
         const error: ApiError = await response.json();

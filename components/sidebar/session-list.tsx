@@ -31,7 +31,7 @@ export function SessionList({
   }
 
   if (!sessions.length) {
-    return <div className='px-4 py-6 text-xs text-muted-foreground'>セッションがありません</div>;
+    return <div className='px-4 py-6 text-xs text-muted-foreground'>No sessions found</div>;
   }
 
   return (

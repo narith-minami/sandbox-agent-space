@@ -63,8 +63,13 @@ export async function POST(request: Request) {
         } catch (error) {
           console.warn('Failed to fetch PR status:', item.prUrl, error);
         }
+
         if (prStatus) {
-          await updateSession(item.id, { prStatus });
+          try {
+            await updateSession(item.id, { prStatus });
+          } catch (updateError) {
+            console.error('Failed to update session with PR status:', item.id, updateError);
+          }
         }
 
         return { id: item.id, prStatus };

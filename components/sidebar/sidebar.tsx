@@ -40,13 +40,13 @@ export function Sidebar() {
       )}
     >
       <div className={cn('flex items-center gap-2 border-b', isOpen ? 'px-3 py-3' : 'px-2 py-3')}>
-        {isOpen && <span className='text-sm font-semibold'>セッション</span>}
+        {isOpen && <span className='text-sm font-semibold'>Sessions</span>}
         <Button
           variant='ghost'
           size='icon'
           className={cn('ml-auto h-7 w-7', !isOpen && 'mx-auto')}
           onClick={() => setIsOpen((prev) => !prev)}
-          title={isOpen ? 'サイドバーを閉じる' : 'サイドバーを開く'}
+          title={isOpen ? 'Close sidebar' : 'Open sidebar'}
         >
           {isOpen ? <ChevronLeft className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
         </Button>
@@ -62,7 +62,7 @@ export function Sidebar() {
               >
                 <span className='flex items-center gap-2'>
                   <Filter className='h-3.5 w-3.5' />
-                  フィルター
+                  Filters
                 </span>
                 <ChevronDown className='h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180' />
               </button>

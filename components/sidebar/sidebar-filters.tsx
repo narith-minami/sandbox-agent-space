@@ -27,7 +27,7 @@ const sessionStatusOptions: Array<{ value: SessionStatus | 'all'; label: string 
 ];
 
 const prStatusOptions: Array<{ value: PrStatus | 'all'; label: string }> = [
-  { value: 'all', label: 'すべて' },
+  { value: 'all', label: 'All' },
   { value: 'open', label: 'Open' },
   { value: 'closed', label: 'Closed' },
   { value: 'merged', label: 'Merged' },
