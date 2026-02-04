@@ -43,7 +43,9 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                     name='planFile'
                     render={({ field: planField }) => (
                       <FormItem>
-                        <FormLabel>Plan File Path</FormLabel>
+                        <FormLabel>
+                          Plan File Path <span className='text-red-500'>*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder='docs/plan.md'
@@ -65,7 +67,9 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                     name='planText'
                     render={({ field: textField }) => (
                       <FormItem>
-                        <FormLabel>Plan Text</FormLabel>
+                        <FormLabel>
+                          Plan Text <span className='text-red-500'>*</span>
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder='Enter your plan content here in Markdown format...'

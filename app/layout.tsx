@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { ServiceWorkerRegistration } from '@/components/providers/service-worker-registration';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
@@ -29,6 +30,7 @@ export default function RootLayout({
     <html lang='ja'>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <QueryProvider>
+          <ServiceWorkerRegistration />
           <div className='min-h-screen bg-background'>
             <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='container flex h-14 items-center px-4 mx-auto'>

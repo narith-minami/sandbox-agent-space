@@ -7,8 +7,8 @@ import {
   SessionArchiveSchema,
   SessionListFilterSchema,
   SnapshotIdSchema,
-  UUIDSchema,
   safeParseSandboxConfig,
+  UUIDSchema,
   validateSandboxConfig,
   validateSnapshotId,
   validateUUID,
@@ -279,14 +279,26 @@ describe('SandboxConfigSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should default to frontend', () => {
+    it('should accept empty string (root directory)', () => {
+      const result = SandboxConfigSchema.safeParse({
+        frontDir: '',
+        planSource: 'file',
+        planFile: 'plan.md',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.frontDir).toBe('');
+      }
+    });
+
+    it('should default to empty string (root directory)', () => {
       const result = SandboxConfigSchema.safeParse({
         planSource: 'file',
         planFile: 'plan.md',
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.frontDir).toBe('frontend');
+        expect(result.data.frontDir).toBe('');
       }
     });
   });
@@ -518,7 +530,7 @@ describe('SandboxConfigSchema', () => {
         expect(result.data.repoUrl).toBe('');
         expect(result.data.repoSlug).toBe('');
         expect(result.data.baseBranch).toBe('main');
-        expect(result.data.frontDir).toBe('frontend');
+        expect(result.data.frontDir).toBe('');
         expect(result.data.planSource).toBe('file');
         expect(result.data.planFile).toBe('plan.md');
         expect(result.data.planText).toBe('');
@@ -683,9 +695,7 @@ describe('SessionListFilterSchema', () => {
   });
 
   it('should reject invalid status', () => {
-    expect(() =>
-      SessionListFilterSchema.parse({ status: ['invalid'] })
-    ).toThrow();
+    expect(() => SessionListFilterSchema.parse({ status: ['invalid'] })).toThrow();
   });
 });
 

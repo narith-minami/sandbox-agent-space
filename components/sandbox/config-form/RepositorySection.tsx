@@ -19,6 +19,7 @@ export function RepositorySection({ control }: RepositorySectionProps) {
         label='Repository URL'
         placeholder='https://github.com/owner/repo'
         description='GitHub repository URL - will be cloned using SDK git source'
+        required
       />
 
       <FormTextField
@@ -27,6 +28,7 @@ export function RepositorySection({ control }: RepositorySectionProps) {
         label='Repository Slug'
         placeholder='owner/repo'
         description='Repository identifier in owner/repo format'
+        required
       />
 
       <FormTextField
@@ -35,6 +37,7 @@ export function RepositorySection({ control }: RepositorySectionProps) {
         label='Base Branch'
         placeholder='main'
         description='Git branch to clone (default: main)'
+        required
       />
     </div>
   );

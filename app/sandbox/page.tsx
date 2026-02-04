@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCommonConfig } from '@/hooks/use-common-config';
 import { useLogStream } from '@/hooks/use-log-stream';
+import { useNotifications } from '@/hooks/use-notifications';
 import { useSandboxCreate, useSession } from '@/hooks/use-sandbox';
 import { getLastUsedValues, saveLastUsedValues } from '@/lib/storage';
 import type { SandboxConfig } from '@/types/sandbox';
@@ -29,6 +30,7 @@ function SandboxPageContent() {
   const { data: cloneSession, isLoading: isCloneLoading } = useSession(cloneFromSessionId);
   const { data: commonConfig, isLoading: isCommonConfigLoading } = useCommonConfig();
   const { logs, isConnected, isComplete, error: streamError } = useLogStream(sessionId);
+  const { permission, isSupported, requestPermission } = useNotifications();
 
   // Load configuration from cloned session or localStorage
   useEffect(() => {
@@ -47,11 +49,12 @@ function SandboxPageContent() {
         repoSlug: config.repoSlug,
         baseBranch: config.baseBranch || 'main',
         frontDir: config.frontDir,
+        memo: cloneSession.memo || '',
         githubToken: '', // Don't clone sensitive data
         opencodeAuthJsonB64: '', // Don't clone sensitive data
         runtime: config.runtime || 'node24',
         snapshotId: config.snapshotId || '',
-        enableCodeReview: true, // Default to enabled
+        enableCodeReview: config.enableCodeReview ?? false,
       });
 
       toast.info('Configuration loaded from previous session', {
@@ -120,6 +123,15 @@ function SandboxPageContent() {
       toast.success('Sandbox started successfully!', {
         description: `Session ID: ${result.sessionId}`,
       });
+
+      // Request notification permission if supported and not already granted/denied
+      if (isSupported && permission === 'default') {
+        try {
+          await requestPermission();
+        } catch (error) {
+          console.error('Failed to request notification permission:', error);
+        }
+      }
     } catch (error) {
       toast.error('Failed to start sandbox', {
         description: error instanceof Error ? error.message : 'Unknown error',

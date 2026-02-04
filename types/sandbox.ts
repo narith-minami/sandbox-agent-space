@@ -17,6 +17,8 @@ export interface SandboxConfig {
   runtime?: SandboxRuntime;
   // New: optional snapshot ID to create from
   snapshotId?: string;
+  // New: enable code review (default: false)
+  enableCodeReview?: boolean;
 }
 
 // Session status types - aligned with Vercel Sandbox SDK status

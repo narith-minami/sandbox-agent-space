@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  extractPrUrl,
-  validatePrUrl,
-  extractRepoSlugFromPrUrl,
-} from './pr-detector';
+import { extractPrUrl, extractRepoSlugFromPrUrl, validatePrUrl } from './pr-detector';
 
 describe('extractPrUrl', () => {
   it('should extract standard GitHub PR URL', () => {
@@ -60,7 +56,8 @@ describe('extractPrUrl', () => {
   });
 
   it('should extract first PR URL when multiple exist', () => {
-    const logMessage = 'PRs: https://github.com/owner/repo/pull/123 and https://github.com/owner/repo/pull/456';
+    const logMessage =
+      'PRs: https://github.com/owner/repo/pull/123 and https://github.com/owner/repo/pull/456';
     const result = extractPrUrl(logMessage);
     expect(result).toBe('https://github.com/owner/repo/pull/123');
   });

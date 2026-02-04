@@ -34,7 +34,7 @@ const statusConfig: Record<
   },
   completed: {
     label: 'Completed',
-    variant: 'outline',
+    variant: 'default',
     icon: CheckCircle2,
   },
   failed: {

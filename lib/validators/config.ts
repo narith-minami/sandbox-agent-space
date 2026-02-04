@@ -74,10 +74,9 @@ export const SandboxConfigSchema = z
 
     frontDir: z
       .string()
-      .min(1, 'Frontend directory is required')
-      .refine((val) => !val.includes('..'), 'Path traversal is not allowed')
-      .refine((val) => !val.startsWith('/'), 'Absolute paths are not allowed')
-      .default('frontend'),
+      .refine((val) => !val || !val.includes('..'), 'Path traversal is not allowed')
+      .refine((val) => !val || !val.startsWith('/'), 'Absolute paths are not allowed')
+      .default(''),
 
     // Plan source: 'file' or 'text'
     planSource: PlanSourceSchema.default('file'),
