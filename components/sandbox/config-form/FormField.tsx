@@ -22,6 +22,7 @@ interface FormTextFieldProps {
   type?: 'text' | 'password';
   badge?: string;
   className?: string;
+  required?: boolean;
 }
 
 export function FormTextField({
@@ -33,22 +34,24 @@ export function FormTextField({
   type = 'text',
   badge,
   className,
+  required = false,
 }: FormTextFieldProps) {
   return (
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem>
           <FormLabel>
             {label}
+            {required && <span className='ml-1 text-red-500'>*</span>}
             {badge && <span className='ml-2 text-xs text-green-600'>{badge}</span>}
           </FormLabel>
           <FormControl>
             {className ? (
               <Textarea
                 placeholder={placeholder}
-                className={className}
+                className={`${className} ${fieldState.error ? 'bg-red-50 border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                 {...field}
                 value={typeof field.value === 'boolean' ? '' : field.value}
               />
@@ -56,6 +59,11 @@ export function FormTextField({
               <Input
                 type={type}
                 placeholder={placeholder}
+                className={
+                  fieldState.error
+                    ? 'bg-red-50 border-red-300 focus:border-red-500 focus:ring-red-500'
+                    : ''
+                }
                 {...field}
                 value={typeof field.value === 'boolean' ? '' : field.value}
               />
@@ -78,6 +86,7 @@ interface FormTextAreaProps {
   rows?: number;
   className?: string;
   badge?: string;
+  required?: boolean;
 }
 
 export function FormTextArea({
@@ -89,22 +98,24 @@ export function FormTextArea({
   rows = 3,
   className = '',
   badge,
+  required = false,
 }: FormTextAreaProps) {
   return (
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <FormItem>
           <FormLabel>
             {label}
+            {required && <span className='ml-1 text-red-500'>*</span>}
             {badge && <span className='ml-2 text-xs text-green-600'>{badge}</span>}
           </FormLabel>
           <FormControl>
             <Textarea
               placeholder={placeholder}
               rows={rows}
-              className={className}
+              className={`${className} ${fieldState.error ? 'bg-red-50 border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
               {...field}
               value={typeof field.value === 'boolean' ? '' : field.value}
             />

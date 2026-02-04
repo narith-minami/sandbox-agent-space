@@ -54,7 +54,7 @@ export function getLastUsedValues(): {
   planFile?: string;
 } {
   if (typeof window === 'undefined') {
-    return { baseBranch: 'main', frontDir: 'frontend' };
+    return { baseBranch: 'main', frontDir: '' };
   }
 
   try {
@@ -62,12 +62,12 @@ export function getLastUsedValues(): {
       repoUrl: localStorage.getItem(STORAGE_KEYS.LAST_REPO_URL) || undefined,
       repoSlug: localStorage.getItem(STORAGE_KEYS.LAST_REPO_SLUG) || undefined,
       baseBranch: localStorage.getItem(STORAGE_KEYS.LAST_BASE_BRANCH) || 'main',
-      frontDir: localStorage.getItem(STORAGE_KEYS.LAST_FRONT_DIR) || 'frontend',
+      frontDir: localStorage.getItem(STORAGE_KEYS.LAST_FRONT_DIR) || '',
       planFile: localStorage.getItem(STORAGE_KEYS.LAST_PLAN_FILE) || undefined,
     };
   } catch (error) {
     console.error('Failed to read from localStorage:', error);
-    return { baseBranch: 'main', frontDir: 'frontend' };
+    return { baseBranch: 'main', frontDir: '' };
   }
 }
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AuthStatus } from '@/components/auth/auth-status';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { ServiceWorkerRegistration } from '@/components/providers/service-worker-registration';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 import type { Metadata } from 'next';
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang='ja'>
       <body className='antialiased'>
         <QueryProvider>
+          <ServiceWorkerRegistration />
           <div className='min-h-screen bg-background'>
             <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='container flex h-14 items-center justify-between px-4 mx-auto'>

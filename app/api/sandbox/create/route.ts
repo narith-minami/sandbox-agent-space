@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSession } from '@/lib/db/queries';
 import { checkRateLimit, getClientIp, getRateLimitHeaders } from '@/lib/rate-limit';
 import { getAuthMethod, isAuthenticationAvailable } from '@/lib/sandbox/auth';
+import { validateGitHubAccess } from '@/lib/sandbox/github-validation';
 import { getSandboxManager } from '@/lib/sandbox/manager';
 import { safeParseSandboxConfig } from '@/lib/validators/config';
 import type { ApiError, CreateSandboxResponse } from '@/types/sandbox';
@@ -109,16 +110,42 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate GitHub token access to repository before creating session
+    if (config.repoUrl && !config.snapshotId) {
+      console.log(`[GitHub Validation] Validating access to ${config.repoUrl}...`);
+      const gitHubValidation = await validateGitHubAccess(githubToken, config.repoUrl);
+
+      if (!gitHubValidation.success) {
+        console.log(`[GitHub Validation] Failed: ${gitHubValidation.message}`);
+        return NextResponse.json<ApiError>(
+          {
+            error: gitHubValidation.message,
+            code: gitHubValidation.code,
+            details: gitHubValidation.details,
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log(
+        `[GitHub Validation] Success: ${gitHubValidation.login} has access to ${gitHubValidation.repo.owner}/${gitHubValidation.repo.repo}`
+      );
+    }
+
     // Create session in database with runtime and memo (prUrl will be auto-detected from logs)
     const session = await createSession(config, runtime, undefined, config.memo);
 
     // Determine plan file path based on plan source
     // Use absolute path for PLAN_FILE so Gist script can access it directly
-    const frontDir = config.frontDir || 'frontend';
+    // frontDir is optional - empty means root directory
+    const frontDir = config.frontDir;
     const planFileName =
       config.planSource === 'text' ? 'plan.md' : config.planFile?.split('/').pop() || 'plan.md';
     // Absolute path to plan file in sandbox (not in repo)
-    const planFilePath = `/vercel/sandbox/${frontDir}/docs/${planFileName}`;
+    // If frontDir is empty, use root directory
+    const planFilePath = frontDir
+      ? `/vercel/sandbox/${frontDir}/docs/${planFileName}`
+      : `/vercel/sandbox/docs/${planFileName}`;
 
     // Start sandbox using Vercel Sandbox SDK
     const sandboxManager = getSandboxManager();

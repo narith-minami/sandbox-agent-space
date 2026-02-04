@@ -9,6 +9,7 @@ import {
   FileText,
   GitBranch,
   RefreshCw,
+  ScrollText,
   StickyNote,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -141,6 +142,23 @@ export default function SessionDetailPage({ params }: PageProps) {
                 <span>{session.config.planFile}</span>
               </div>
             </div>
+
+            {session.config.planText && (
+              <>
+                <Separator />
+                <div className='space-y-2'>
+                  <div className='flex items-center gap-2'>
+                    <ScrollText className='h-4 w-4 text-muted-foreground' />
+                    <h4 className='text-sm font-medium'>Plan Content</h4>
+                  </div>
+                  <div className='max-h-48 overflow-y-auto'>
+                    <pre className='text-xs bg-muted p-3 rounded whitespace-pre-wrap'>
+                      {session.config.planText}
+                    </pre>
+                  </div>
+                </div>
+              </>
+            )}
 
             {session.memo && (
               <>

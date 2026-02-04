@@ -58,8 +58,8 @@ export function AdvancedSettingsSection({ control, commonConfig }: AdvancedSetti
           control={control}
           name='frontDir'
           label='Frontend Directory'
-          placeholder='frontend'
-          description='Directory containing frontend code'
+          placeholder='(root)'
+          description='Directory containing frontend code (leave empty for root)'
         />
       )}
 

@@ -27,7 +27,9 @@ describe('getSnapshot', () => {
       createdAt: new Date('2024-01-01'),
       expiresAt: new Date('2024-01-08'),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await getSnapshot('snap-123');
     expect(result).toEqual(mockSnapshot);
@@ -51,7 +53,9 @@ describe('getSnapshot', () => {
       createdAt: new Date('2024-01-01'),
       expiresAt: new Date('2024-01-08'),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await getSnapshot('snap-123');
     expect(result?.status).toBe('deleted');
@@ -67,7 +71,9 @@ describe('getSnapshot', () => {
       createdAt: new Date('2024-01-01'),
       expiresAt: new Date('2024-01-08'),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await getSnapshot('snap-123');
     expect(result?.status).toBe('failed');
@@ -100,7 +106,9 @@ describe('listSnapshots', () => {
         pagination: {},
       },
     };
-    vi.mocked(Snapshot.list).mockResolvedValue(mockResponse);
+    vi.mocked(Snapshot.list).mockResolvedValue(
+      mockResponse as unknown as Awaited<ReturnType<typeof Snapshot.list>>
+    );
 
     const result = await listSnapshots();
     expect(result.snapshots).toHaveLength(2);
@@ -126,7 +134,9 @@ describe('listSnapshots', () => {
         pagination: { next: 'cursor-123' },
       },
     };
-    vi.mocked(Snapshot.list).mockResolvedValue(mockResponse);
+    vi.mocked(Snapshot.list).mockResolvedValue(
+      mockResponse as unknown as Awaited<ReturnType<typeof Snapshot.list>>
+    );
 
     const result = await listSnapshots();
     expect(result.hasMore).toBe(true);
@@ -140,7 +150,9 @@ describe('listSnapshots', () => {
         pagination: {},
       },
     };
-    vi.mocked(Snapshot.list).mockResolvedValue(mockResponse);
+    vi.mocked(Snapshot.list).mockResolvedValue(
+      mockResponse as unknown as Awaited<ReturnType<typeof Snapshot.list>>
+    );
 
     const result = await listSnapshots();
     expect(result.snapshots).toHaveLength(0);
@@ -155,7 +167,9 @@ describe('listSnapshots', () => {
         pagination: {},
       },
     };
-    vi.mocked(Snapshot.list).mockResolvedValue(mockResponse);
+    vi.mocked(Snapshot.list).mockResolvedValue(
+      mockResponse as unknown as Awaited<ReturnType<typeof Snapshot.list>>
+    );
 
     await listSnapshots({ limit: 10 });
     expect(Snapshot.list).toHaveBeenCalledWith({ limit: 10 });
@@ -169,7 +183,9 @@ describe('listSnapshots', () => {
         pagination: {},
       },
     };
-    vi.mocked(Snapshot.list).mockResolvedValue(mockResponse);
+    vi.mocked(Snapshot.list).mockResolvedValue(
+      mockResponse as unknown as Awaited<ReturnType<typeof Snapshot.list>>
+    );
 
     const since = new Date('2024-01-01');
     const until = new Date('2024-01-31');
@@ -194,7 +210,9 @@ describe('deleteSnapshot', () => {
       snapshotId: 'snap-123',
       delete: vi.fn().mockResolvedValue(undefined),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await deleteSnapshot('snap-123');
     expect(result).toBe(true);
@@ -215,7 +233,9 @@ describe('deleteSnapshot', () => {
       snapshotId: 'snap-123',
       delete: vi.fn().mockRejectedValue(new Error('Delete failed')),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await deleteSnapshot('snap-123');
     expect(result).toBe(false);
@@ -234,7 +254,9 @@ describe('isSnapshotValid', () => {
       createdAt: new Date(),
       expiresAt: futureDate,
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await isSnapshotValid('snap-123');
     expect(result).toBe(true);
@@ -250,7 +272,9 @@ describe('isSnapshotValid', () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 86400000),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await isSnapshotValid('snap-123');
     expect(result).toBe(false);
@@ -267,7 +291,9 @@ describe('isSnapshotValid', () => {
       createdAt: new Date(Date.now() - 172800000),
       expiresAt: pastDate,
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await isSnapshotValid('snap-123');
     expect(result).toBe(false);
@@ -283,7 +309,9 @@ describe('isSnapshotValid', () => {
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 86400000),
     };
-    vi.mocked(Snapshot.get).mockResolvedValue(mockSnapshot);
+    vi.mocked(Snapshot.get).mockResolvedValue(
+      mockSnapshot as unknown as Awaited<ReturnType<typeof Snapshot.get>>
+    );
 
     const result = await isSnapshotValid('snap-123');
     expect(result).toBe(false);

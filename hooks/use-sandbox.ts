@@ -1,12 +1,26 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { showSessionNotification } from '@/lib/notifications';
 import type {
   ApiError,
   CreateSandboxResponse,
   SandboxConfig,
   SandboxSessionWithLogs,
+  SessionStatus,
 } from '@/types/sandbox';
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+/**
+ * Log message in development mode only
+ */
+function devLog(...args: unknown[]) {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+}
 
 // Create sandbox mutation
 export function useSandboxCreate() {
@@ -36,7 +50,11 @@ export function useSandboxCreate() {
 
 // Get session with logs
 export function useSession(sessionId: string | null) {
-  return useQuery({
+  const prevStatusRef = useRef<SessionStatus | null>(null);
+  const notificationShownRef = useRef<boolean>(false);
+  const isFirstFetchRef = useRef<boolean>(true);
+
+  const query = useQuery({
     queryKey: ['session', sessionId],
     queryFn: async (): Promise<SandboxSessionWithLogs> => {
       const response = await fetch(`/api/sandbox/${sessionId}`);
@@ -51,11 +69,75 @@ export function useSession(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      const isTerminalStatus = data?.status === 'completed' || data?.status === 'failed';
+      const currentStatus = data?.status;
+      const isTerminalStatus = currentStatus === 'completed' || currentStatus === 'failed';
+
+      devLog('[useSession] Polling status:', {
+        sessionId: data?.id.slice(0, 8),
+        currentStatus,
+        prevStatus: prevStatusRef.current,
+        isFirstFetch: isFirstFetchRef.current,
+        notificationShown: notificationShownRef.current,
+        isTerminalStatus,
+      });
+
+      // Detect transition to terminal status and trigger notification
+      // Trigger notification if:
+      // 1. Current status is terminal (completed or failed)
+      // 2. Notification has not been shown yet
+      // 3. We have seen a non-terminal status before (running or pending)
+      //    This prevents showing notification for sessions that are already complete when first loaded
+      const hasSeenNonTerminalStatus =
+        prevStatusRef.current === 'running' || prevStatusRef.current === 'pending';
+
+      const shouldShowNotification =
+        isTerminalStatus && !notificationShownRef.current && hasSeenNonTerminalStatus;
+
+      if (shouldShowNotification && data) {
+        devLog(
+          '[useSession] Status transition detected:',
+          prevStatusRef.current,
+          '→',
+          currentStatus,
+          '(firstFetch:',
+          isFirstFetchRef.current,
+          ')'
+        );
+        // Show browser notification
+        showSessionNotification(data.id, currentStatus, data.prUrl)
+          .then(() => {
+            devLog('[useSession] Notification shown successfully');
+            notificationShownRef.current = true;
+          })
+          .catch((error) => {
+            console.error('[useSession] Failed to show notification:', error);
+          });
+      }
+
+      // Update tracking refs
+      if (currentStatus) {
+        prevStatusRef.current = currentStatus;
+      }
+
+      // Mark that we've completed at least one fetch
+      if (isFirstFetchRef.current) {
+        isFirstFetchRef.current = false;
+      }
+
       if (isTerminalStatus) return false;
       return 2000; // Refetch every 2 seconds while running
     },
   });
+
+  // Reset refs when sessionId changes
+  useEffect(() => {
+    devLog('[useSession] Session changed, resetting refs:', sessionId);
+    prevStatusRef.current = null;
+    notificationShownRef.current = false;
+    isFirstFetchRef.current = true;
+  }, [sessionId]);
+
+  return query;
 }
 
 // Get session status only

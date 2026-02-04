@@ -44,8 +44,10 @@ export function SessionCard({ session }: SessionCardProps) {
   return (
     <Card className='hover:shadow-md transition-shadow'>
       <CardHeader className='pb-2'>
-        <div className='flex items-center justify-between'>
-          <CardTitle className='text-lg font-medium truncate'>{session.config.repoSlug}</CardTitle>
+        <div className='flex items-center justify-between gap-2 min-w-0'>
+          <CardTitle className='text-lg font-medium truncate min-w-0'>
+            {session.config.repoSlug}
+          </CardTitle>
           <StatusBadge status={session.status} />
         </div>
       </CardHeader>

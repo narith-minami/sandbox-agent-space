@@ -303,7 +303,31 @@ describe('SandboxManager', () => {
 
       const { getSession } = await import('@/lib/db/queries');
       const { Sandbox } = await import('@vercel/sandbox');
-      vi.mocked(getSession).mockResolvedValue({ sandboxId: 'sandbox-123' });
+      vi.mocked(getSession).mockResolvedValue({
+        id: 'session-123',
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        runtime: 'node24',
+        config: {
+          planSource: 'file',
+          planFile: 'plan.md',
+          planText: '',
+          gistUrl: 'https://gist.githubusercontent.com/user/id/raw',
+          repoUrl: 'https://github.com/owner/repo',
+          repoSlug: 'owner/repo',
+          baseBranch: 'main',
+          frontDir: '',
+          githubToken: '',
+          opencodeAuthJsonB64: '',
+          runtime: 'node24',
+          enableCodeReview: false,
+        },
+        memo: null,
+        prUrl: null,
+        archived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
       vi.mocked(Sandbox.get).mockResolvedValue(mockSandbox as never);
 
       const result = await manager.getSandboxBySession('session-123');
@@ -354,15 +378,40 @@ describe('SandboxManager', () => {
       const logs = [
         {
           id: 'log-1',
+          sessionId: 'session-123',
           timestamp: new Date('2024-01-01T00:00:00.000Z'),
-          level: 'stdout',
+          level: 'stdout' as const,
           message: 'hello',
         },
       ];
 
       const { getLogsBySessionId, getSession } = await import('@/lib/db/queries');
       vi.mocked(getLogsBySessionId).mockResolvedValue(logs);
-      vi.mocked(getSession).mockResolvedValue({ status: 'completed' });
+      vi.mocked(getSession).mockResolvedValue({
+        id: 'session-123',
+        sandboxId: 'sandbox-123',
+        status: 'completed',
+        runtime: 'node24',
+        config: {
+          planSource: 'file',
+          planFile: 'plan.md',
+          planText: '',
+          gistUrl: 'https://gist.githubusercontent.com/user/id/raw',
+          repoUrl: 'https://github.com/owner/repo',
+          repoSlug: 'owner/repo',
+          baseBranch: 'main',
+          frontDir: '',
+          githubToken: '',
+          opencodeAuthJsonB64: '',
+          runtime: 'node24',
+          enableCodeReview: false,
+        },
+        memo: null,
+        prUrl: null,
+        archived: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
       const entries: string[] = [];
       for await (const entry of manager.streamLogs('session-123')) {
