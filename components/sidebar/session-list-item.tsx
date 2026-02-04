@@ -156,12 +156,7 @@ export function SessionListItem({
   };
 
   return (
-    <div
-      className='relative'
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      role='group'
-    >
+    <div className='relative'>
       <Link
         href={`/sandbox/${session.id}`}
         className={cn(
@@ -170,6 +165,8 @@ export function SessionListItem({
           !compact && 'pr-11'
         )}
         title={`${repoSlug} / ${config.label} / ${formattedDate}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div
           className={cn(
