@@ -1,31 +1,17 @@
 import type { Sandbox } from '@vercel/sandbox';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  createMockAuthModule,
+  createMockQueries,
+  createMockSandbox,
+  createMockSandboxModule,
+} from '@/test/helpers';
 import { getSandboxManager, SandboxManager } from './manager';
 
-// Mock dependencies
-vi.mock('@/lib/db/queries', () => ({
-  addLog: vi.fn().mockResolvedValue({}),
-  getSession: vi.fn().mockResolvedValue({}),
-  getLogsBySessionId: vi.fn().mockResolvedValue([]),
-  setSessionSandboxId: vi.fn().mockResolvedValue({}),
-  setSessionStatus: vi.fn().mockResolvedValue({}),
-  updateSession: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock('@vercel/sandbox', () => ({
-  Sandbox: {
-    create: vi.fn(),
-    get: vi.fn(),
-    list: vi.fn(),
-  },
-  Command: vi.fn(),
-}));
-
-vi.mock('./auth', () => ({
-  getSandboxRuntime: vi.fn().mockReturnValue('node24'),
-  getSandboxTimeout: vi.fn().mockReturnValue(600000),
-  requireAuthentication: vi.fn(),
-}));
+// Mock dependencies with shared utilities
+vi.mock('@/lib/db/queries', () => createMockQueries());
+vi.mock('@vercel/sandbox', () => createMockSandboxModule());
+vi.mock('./auth', () => createMockAuthModule());
 
 describe('getSandboxManager', () => {
   it('should return singleton instance', () => {
@@ -44,11 +30,7 @@ describe('SandboxManager', () => {
   describe('createSandbox', () => {
     it('should create sandbox from snapshot', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -69,11 +51,7 @@ describe('SandboxManager', () => {
 
     it('should create sandbox from git repo', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -97,11 +75,7 @@ describe('SandboxManager', () => {
 
     it('should create empty sandbox when no source provided', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -135,11 +109,7 @@ describe('SandboxManager', () => {
   describe('getSandboxStatus', () => {
     it('should return mapped status', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123', status: 'running' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.get).mockResolvedValue(mockSandbox as never);
@@ -150,6 +120,20 @@ describe('SandboxManager', () => {
     });
 
     it('should return failed status on error', async () => {
+      const manager = new SandboxManager();
+      const error = new Error('Get failed');
+
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { Sandbox } = await import('@vercel/sandbox');
+      vi.mocked(Sandbox.get).mockRejectedValue(error);
+
+      const result = await manager.getSandboxStatus('sandbox-123');
+      expect(result.status).toBe('failed');
+      expect(errorSpy).toHaveBeenCalledWith('Failed to get sandbox status:', error);
+      errorSpy.mockRestore();
+    });
+
+    it('should return failed status when not found', async () => {
       const manager = new SandboxManager();
 
       const error = new Error('Not found');
