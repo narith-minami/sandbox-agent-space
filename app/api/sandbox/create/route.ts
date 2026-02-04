@@ -1,49 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getGitHubSessionForApi } from '@/lib/auth/get-github-session';
+import { AuthenticationValidator } from '@/lib/api/auth-validator';
+import { GitHubValidator } from '@/lib/api/github-validator';
+import { SandboxConfigBuilder } from '@/lib/api/sandbox-config-builder';
 import { createSession } from '@/lib/db/queries';
 import { checkRateLimit, getClientIp, getRateLimitHeaders } from '@/lib/rate-limit';
-import { getAuthMethod, isAuthenticationAvailable } from '@/lib/sandbox/auth';
-import { validateGitHubAccess } from '@/lib/sandbox/github-validation';
 import { getSandboxManager } from '@/lib/sandbox/manager';
 import { safeParseSandboxConfig } from '@/lib/validators/config';
 import type { ApiError, CreateSandboxResponse } from '@/types/sandbox';
 
 export async function POST(request: Request) {
   try {
-    // Get GitHub session (returns null if not authenticated)
-    const githubSessionResult = await getGitHubSessionForApi();
-
-    // Check if user is authenticated with GitHub
-    if (!githubSessionResult && !process.env.COMMON_GITHUB_TOKEN) {
-      return NextResponse.json<ApiError>(
-        {
-          error: 'GitHub authentication required',
-          code: 'AUTH_REQUIRED',
-          details: {
-            message: 'Please authenticate with GitHub to create a sandbox',
-            loginUrl: `/login?next=${encodeURIComponent('/sandbox')}`,
-          },
-        },
-        { status: 401 }
-      );
+    // 1. Authentication validation
+    const authValidator = new AuthenticationValidator();
+    const authResult = await authValidator.validate();
+    if (!authResult.success) {
+      return authResult.response;
     }
 
-    // Check if Vercel authentication is available
-    if (!isAuthenticationAvailable()) {
-      return NextResponse.json<ApiError>(
-        {
-          error: 'Vercel Sandbox authentication not configured',
-          code: 'AUTH_NOT_CONFIGURED',
-          details: {
-            message:
-              'For local development, run "vercel link" and "vercel env pull". For production on Vercel, authentication is automatic.',
-          },
-        },
-        { status: 503 }
-      );
-    }
-
-    // Rate limiting
+    // 2. Rate limiting
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkRateLimit(clientIp);
 
@@ -61,10 +35,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse request body
+    // 3. Parse and validate request body
     const body = await request.json();
-
-    // Validate configuration
     const validationResult = safeParseSandboxConfig(body);
 
     if (!validationResult.success) {
@@ -79,121 +51,35 @@ export async function POST(request: Request) {
     }
 
     const config = validationResult.data;
-    const runtime = config.runtime || 'node24';
 
-    // Get GitHub token from session (primary) or environment variable (fallback)
-    const githubToken =
-      githubSessionResult?.session.accessToken || process.env.COMMON_GITHUB_TOKEN || '';
-
-    // Use common config as fallback for empty values
-    const opencodeAuthJsonB64 =
-      config.opencodeAuthJsonB64 || process.env.COMMON_OPENCODE_AUTH_JSON_B64 || '';
-    const gistUrl = config.gistUrl || process.env.COMMON_GIST_URL || '';
-
-    // Validate that we have required values (either from form or common config)
-    if (!githubToken) {
-      return NextResponse.json<ApiError>(
-        {
-          error: 'GitHub token is required',
-          code: 'VALIDATION_ERROR',
-          details: {
-            message:
-              'Please authenticate with GitHub or set COMMON_GITHUB_TOKEN environment variable',
-          },
-        },
-        { status: 400 }
-      );
+    // 4. Build sandbox configuration
+    const configBuilder = new SandboxConfigBuilder();
+    const buildResult = configBuilder.build(config, authResult.githubToken);
+    if (!buildResult.success) {
+      return buildResult.response;
     }
 
-    if (!opencodeAuthJsonB64) {
-      return NextResponse.json<ApiError>(
-        {
-          error: 'OpenCode auth JSON is required',
-          code: 'VALIDATION_ERROR',
-          details: {
-            message:
-              'Please provide OpenCode auth JSON or set COMMON_OPENCODE_AUTH_JSON_B64 environment variable',
-          },
-        },
-        { status: 400 }
+    // 5. Validate GitHub access (if using repository)
+    if (config.repoUrl) {
+      const githubValidator = new GitHubValidator();
+      const githubResult = await githubValidator.validateRepoAccess(
+        authResult.githubToken,
+        config.repoUrl,
+        !!config.snapshotId
       );
-    }
-
-    if (!gistUrl && !config.snapshotId) {
-      return NextResponse.json<ApiError>(
-        {
-          error: 'Gist URL is required',
-          code: 'VALIDATION_ERROR',
-          details: {
-            message: 'Please provide a Gist URL or set COMMON_GIST_URL environment variable',
-          },
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate GitHub token access to repository before creating session
-    if (config.repoUrl && !config.snapshotId) {
-      console.log(`[GitHub Validation] Validating access to ${config.repoUrl}...`);
-      const gitHubValidation = await validateGitHubAccess(githubToken, config.repoUrl);
-
-      if (!gitHubValidation.success) {
-        console.log(`[GitHub Validation] Failed: ${gitHubValidation.message}`);
-        return NextResponse.json<ApiError>(
-          {
-            error: gitHubValidation.message,
-            code: gitHubValidation.code,
-            details: gitHubValidation.details,
-          },
-          { status: 400 }
-        );
+      if (!githubResult.success) {
+        return githubResult.response;
       }
-
-      console.log(
-        `[GitHub Validation] Success: ${gitHubValidation.login} has access to ${gitHubValidation.repo.owner}/${gitHubValidation.repo.repo}`
-      );
     }
 
-    // Create session in database with runtime and memo (prUrl will be auto-detected from logs)
-    const session = await createSession(config, runtime, undefined, config.memo);
+    // 6. Create session in database
+    const session = await createSession(config, buildResult.config.runtime, undefined, config.memo);
 
-    // Determine plan file path based on plan source
-    // Use absolute path for PLAN_FILE so Gist script can access it directly
-    // frontDir is optional - empty means root directory
-    const frontDir = config.frontDir;
-    const planFileName =
-      config.planSource === 'text' ? 'plan.md' : config.planFile?.split('/').pop() || 'plan.md';
-    // Absolute path to plan file in sandbox (not in repo)
-    // If frontDir is empty, use root directory
-    const planFilePath = frontDir
-      ? `/vercel/sandbox/${frontDir}/docs/${planFileName}`
-      : `/vercel/sandbox/docs/${planFileName}`;
-
-    // Start sandbox using Vercel Sandbox SDK
+    // 7. Start sandbox
     const sandboxManager = getSandboxManager();
-    const result = await sandboxManager.createSandbox(session.id, {
-      env: {
-        GITHUB_TOKEN: githubToken,
-        OPENCODE_AUTH_JSON_B64: opencodeAuthJsonB64,
-        GIST_URL: gistUrl,
-        REPO_URL: config.repoUrl,
-        REPO_SLUG: config.repoSlug,
-        BASE_BRANCH: config.baseBranch || 'main',
-        FRONT_DIR: config.frontDir,
-        PLAN_FILE: planFilePath,
-        ENABLE_CODE_REVIEW: config.enableCodeReview ? '1' : '0',
-      },
-      command: `
-        curl -fsSL "${gistUrl}" -o run.sh
-        chmod +x run.sh
-        ./run.sh
-      `,
-      runtime,
-      snapshotId: config.snapshotId,
-      planText: config.planSource === 'text' ? config.planText : undefined,
-      planFilePath,
-    });
+    const result = await sandboxManager.createSandbox(session.id, buildResult.config);
 
+    // 8. Return success response
     return NextResponse.json<CreateSandboxResponse>(
       {
         sessionId: session.id,
@@ -204,7 +90,7 @@ export async function POST(request: Request) {
         status: 201,
         headers: {
           ...getRateLimitHeaders(rateLimitResult),
-          'X-Auth-Method': getAuthMethod(),
+          'X-Auth-Method': authResult.authMethod,
         },
       }
     );
