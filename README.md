@@ -13,6 +13,8 @@ A Next.js 16 application that manages **Vercel Sandbox SDK** integration for run
 - 💾 **LocalStorage Persistence** - Remember last used repository settings
 - 🎯 **Multiple Runtimes** - Support for Node.js 24, Node.js 22, Python 3.13
 - ⏱️ **Configurable Timeout** - Default 10 minutes, configurable up to 45 minutes
+- 🧪 **Comprehensive Testing** - 332 tests with 91%+ coverage
+- 🔧 **Test Helpers** - Shared utilities for reducing test duplication
 
 ## Getting Started
 
@@ -182,22 +184,26 @@ pnpm run db:studio
 ## Project Structure
 
 ```
-├── app/
-│   ├── api/              # API routes
-│   ├── sandbox/          # Sandbox pages
-│   ├── history/          # Session history
-│   └── ...
-├── components/
-│   ├── sandbox/          # Sandbox-specific components
-│   └── ui/               # shadcn/ui components
-├── hooks/                # Custom React hooks
-├── lib/
-│   ├── db/               # Database schema & queries
-│   ├── sandbox/          # Sandbox manager & utilities
-│   ├── validators/       # Zod validation schemas
-│   └── storage.ts        # LocalStorage utilities
-├── types/                # TypeScript type definitions
-└── drizzle/              # Database migrations
+ ├── app/
+ │   ├── api/              # API routes
+ │   ├── sandbox/          # Sandbox pages
+ │   ├── history/          # Session history
+ │   └── ...
+ ├── components/
+ │   ├── sandbox/          # Sandbox-specific components
+ │   └── ui/               # shadcn/ui components
+ ├── hooks/                # Custom React hooks
+ ├── lib/
+ │   ├── api/              # API utilities (validators, config builders)
+ │   ├── db/               # Database schema & queries
+ │   ├── sandbox/          # Sandbox manager & services
+ │   ├── validators/       # Zod validation schemas
+ │   └── storage.ts        # LocalStorage utilities
+ ├── test/
+ │   ├── helpers/          # Shared test utilities
+ │   └── setup.ts          # Vitest global setup
+ ├── types/                # TypeScript type definitions
+ └── drizzle/              # Database migrations
 ```
 
 ## Key Features Explained
@@ -250,7 +256,10 @@ pnpm run check
 pnpm run typecheck
 
 # Run tests
-pnpm run test
+pnpm vitest
+
+# Run tests with coverage
+pnpm test:coverage
 
 # Run all CI checks (lint, typecheck, build, test)
 pnpm run ci:all
