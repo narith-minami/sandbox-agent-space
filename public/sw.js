@@ -1,40 +1,37 @@
-// Service Worker for Web Push Notifications
-// Handles notification display and click events
+/* eslint-disable no-undef */
+// Service Worker for handling push notifications
 
 self.addEventListener('install', (_event) => {
-  console.log('[SW] Service Worker installing...');
+  // Skip waiting to activate immediately
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Service Worker activating...');
+  // Claim all clients immediately
   event.waitUntil(clients.claim());
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
-
   event.notification.close();
 
   const sessionId = event.notification.data?.sessionId;
-  const url = sessionId ? `/sandbox?session=${sessionId}` : '/sandbox';
+  const prUrl = event.notification.data?.prUrl;
+
+  // Default to sandbox session page
+  const urlToOpen = prUrl || (sessionId ? `/sandbox/${sessionId}` : '/sandbox');
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open
+      // Check if there's already a window open with this URL
       for (const client of clientList) {
-        if (client.url.includes('/sandbox') && 'focus' in client) {
-          return client.focus().then(() => {
-            // Navigate to session page
-            if (sessionId) {
-              client.navigate(url);
-            }
-          });
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
         }
       }
-      // No window open, open new one
+
+      // If no window is open, open a new one
       if (clients.openWindow) {
-        return clients.openWindow(url);
+        return clients.openWindow(urlToOpen);
       }
     })
   );

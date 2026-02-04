@@ -22,11 +22,46 @@ export function middleware(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
 
   if (authHeader) {
-    const authValue = authHeader.split(' ')[1];
-    const [authUser, authPassword] = atob(authValue).split(':');
+    try {
+      const authValue = authHeader.split(' ')[1];
+      if (!authValue) {
+        // Invalid auth header format
+        return NextResponse.json(
+          { error: 'Invalid authorization header format' },
+          {
+            status: 401,
+            headers: {
+              'WWW-Authenticate': 'Basic realm="Sandbox Agent Space"',
+            },
+          }
+        );
+      }
 
-    if (authUser === user && authPassword === password) {
-      return NextResponse.next();
+      const decoded = Buffer.from(authValue, 'base64').toString('utf-8');
+      const colonIndex = decoded.indexOf(':');
+
+      if (colonIndex === -1) {
+        // No colon found in decoded string
+        return NextResponse.json(
+          { error: 'Invalid authorization credentials format' },
+          {
+            status: 401,
+            headers: {
+              'WWW-Authenticate': 'Basic realm="Sandbox Agent Space"',
+            },
+          }
+        );
+      }
+
+      const authUser = decoded.slice(0, colonIndex);
+      const authPassword = decoded.slice(colonIndex + 1);
+
+      if (authUser === user && authPassword === password) {
+        return NextResponse.next();
+      }
+    } catch (error) {
+      console.error('Error parsing basic auth header:', error);
+      // Invalid auth header format, fall through to 401 response
     }
   }
 

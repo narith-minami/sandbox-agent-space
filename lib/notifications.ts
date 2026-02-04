@@ -10,7 +10,40 @@ const PERMISSION_DENIED_KEY = 'notification-permission-denied';
 const PERMISSION_ASKED_KEY = 'notification-permission-asked';
 
 /**
- * Check if notifications are supported in the current browser
+ * Browser notification utilities for session status changes
+ */
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+/**
+ * Log message in development mode only
+ */
+function devLog(...args: unknown[]) {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+}
+
+/**
+ * Log warning in development mode only
+ */
+function devWarn(...args: unknown[]) {
+  if (isDevelopment) {
+    console.warn(...args);
+  }
+}
+
+/**
+ * Log error in development mode only
+ */
+function devError(...args: unknown[]) {
+  if (isDevelopment) {
+    console.error(...args);
+  }
+}
+
+/**
+ * Check if the browser supports notifications and service workers
  */
 export function isNotificationSupported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
@@ -85,28 +118,28 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  */
 async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (!isNotificationSupported()) {
-    console.log('[Notifications] Service worker not supported');
+    devLog('[Notifications] Service worker not supported');
     return null;
   }
 
   try {
-    console.log('[Notifications] Waiting for service worker to be ready...');
+    devLog('[Notifications] Waiting for service worker to be ready...');
     const registration = await navigator.serviceWorker.ready;
 
     // Check if service worker is actually active
     const sw = registration.active || registration.installing || registration.waiting;
     if (sw) {
-      console.log('[Notifications] Service worker state:', sw.state);
+      devLog('[Notifications] Service worker state:', sw.state);
 
       // If service worker is not activated yet, wait a bit
       if (sw.state !== 'activated') {
-        console.warn('[Notifications] Service worker not yet activated, current state:', sw.state);
+        devWarn('[Notifications] Service worker not yet activated, current state:', sw.state);
       }
     } else {
-      console.error('[Notifications] No service worker instance found in registration');
+      devError('[Notifications] No service worker instance found in registration');
     }
 
-    console.log('[Notifications] Service worker registration ready:', {
+    devLog('[Notifications] Service worker registration ready:', {
       scope: registration.scope,
       active: !!registration.active,
       installing: !!registration.installing,
@@ -115,7 +148,7 @@ async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration
 
     return registration;
   } catch (error) {
-    console.error('[Notifications] Failed to get service worker registration:', error);
+    devError('[Notifications] Failed to get service worker registration:', error);
     return null;
   }
 }
@@ -129,7 +162,7 @@ export async function showSessionNotification(
   status: SessionStatus,
   prUrl?: string | null
 ): Promise<void> {
-  console.log('[Notifications] showSessionNotification called:', {
+  devLog('[Notifications] showSessionNotification called:', {
     sessionId: sessionId.slice(0, 8),
     status,
     prUrl: prUrl ? 'present' : 'none',
@@ -137,28 +170,28 @@ export async function showSessionNotification(
 
   // Only show notifications for terminal statuses
   if (status !== 'completed' && status !== 'failed') {
-    console.log('[Notifications] Status not terminal, skipping notification:', status);
+    devLog('[Notifications] Status not terminal, skipping notification:', status);
     return;
   }
 
   // Check if notifications are supported and permitted
   if (!isNotificationSupported()) {
-    console.log('[Notifications] Notifications not supported');
+    devLog('[Notifications] Notifications not supported');
     return;
   }
 
   const permission = getNotificationPermission();
   if (permission !== 'granted') {
-    console.log('[Notifications] Permission not granted:', permission);
+    devLog('[Notifications] Permission not granted:', permission);
     return;
   }
 
-  console.log('[Notifications] Permission granted, getting service worker registration...');
+  devLog('[Notifications] Permission granted, getting service worker registration...');
 
   // Get service worker registration
   const registration = await getServiceWorkerRegistration();
   if (!registration) {
-    console.error('[Notifications] Service worker not registered');
+    devError('[Notifications] Service worker not registered');
     return;
   }
 
@@ -185,7 +218,7 @@ export async function showSessionNotification(
     body += isSuccess ? ' completed successfully' : ' failed';
   }
 
-  console.log('[Notifications] Showing notification:', { title, body });
+  devLog('[Notifications] Showing notification:', { title, body });
 
   // Show notification via service worker
   try {
@@ -202,9 +235,9 @@ export async function showSessionNotification(
       },
     });
 
-    console.log('[Notifications] Notification shown successfully:', title, sessionId.slice(0, 8));
+    devLog('[Notifications] Notification shown successfully:', title, sessionId.slice(0, 8));
   } catch (error) {
-    console.error('[Notifications] Failed to show notification:', error);
+    devError('[Notifications] Failed to show notification:', error);
     throw error; // Re-throw to let caller know it failed
   }
 }

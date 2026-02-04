@@ -11,6 +11,17 @@ import type {
   SessionStatus,
 } from '@/types/sandbox';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+/**
+ * Log message in development mode only
+ */
+function devLog(...args: unknown[]) {
+  if (isDevelopment) {
+    console.log(...args);
+  }
+}
+
 // Create sandbox mutation
 export function useSandboxCreate() {
   const queryClient = useQueryClient();
@@ -61,7 +72,7 @@ export function useSession(sessionId: string | null) {
       const currentStatus = data?.status;
       const isTerminalStatus = currentStatus === 'completed' || currentStatus === 'failed';
 
-      console.log('[useSession] Polling status:', {
+      devLog('[useSession] Polling status:', {
         sessionId: data?.id.slice(0, 8),
         currentStatus,
         prevStatus: prevStatusRef.current,
@@ -86,7 +97,7 @@ export function useSession(sessionId: string | null) {
         isTerminalStatus && !notificationShownRef.current && hasTransitioned;
 
       if (shouldShowNotification && data) {
-        console.log(
+        devLog(
           '[useSession] Status transition detected:',
           prevStatusRef.current,
           '→',
@@ -98,7 +109,7 @@ export function useSession(sessionId: string | null) {
         // Show browser notification
         showSessionNotification(data.id, currentStatus, data.prUrl)
           .then(() => {
-            console.log('[useSession] Notification shown successfully');
+            devLog('[useSession] Notification shown successfully');
             notificationShownRef.current = true;
           })
           .catch((error) => {
@@ -123,7 +134,7 @@ export function useSession(sessionId: string | null) {
 
   // Reset refs when sessionId changes
   useEffect(() => {
-    console.log('[useSession] Session changed, resetting refs:', sessionId);
+    devLog('[useSession] Session changed, resetting refs:', sessionId);
     prevStatusRef.current = null;
     notificationShownRef.current = false;
     isFirstFetchRef.current = true;
