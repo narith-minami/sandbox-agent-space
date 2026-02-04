@@ -348,10 +348,6 @@ describe('SandboxManager', () => {
       const { setSessionStatus, addLog } = await import('@/lib/db/queries');
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
-      vi.spyOn(
-        manager as unknown as { executeCommand: () => Promise<void> },
-        'executeCommand'
-      ).mockResolvedValue();
 
       await manager.createSandbox('session-123', {
         env: {},
@@ -423,26 +419,34 @@ describe('SandboxManager', () => {
   describe('file and command helpers', () => {
     it('should write files to sandbox', async () => {
       const manager = new SandboxManager();
+      const mockWriteFiles = vi.fn().mockResolvedValue(undefined);
       const mockSandbox = {
-        writeFiles: vi.fn().mockResolvedValue(undefined),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        writeFiles: mockWriteFiles,
+      } as any;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method instead
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       await manager.writeFiles('session-123', [
         { path: '/tmp/test.txt', content: Buffer.from('ok') },
       ]);
 
-      expect(mockSandbox.writeFiles).toHaveBeenCalled();
+      expect(mockWriteFiles).toHaveBeenCalled();
     });
 
     it('should read file from sandbox', async () => {
       const manager = new SandboxManager();
+      const mockReadFileToBuffer = vi.fn().mockResolvedValue(Buffer.from('data'));
       const mockSandbox = {
-        readFileToBuffer: vi.fn().mockResolvedValue(Buffer.from('data')),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        readFileToBuffer: mockReadFileToBuffer,
+      } as any;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method instead
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.readFile('session-123', '/tmp/test.txt');
       expect(result).toEqual(Buffer.from('data'));
@@ -455,16 +459,20 @@ describe('SandboxManager', () => {
         stdout: vi.fn().mockResolvedValue('ok'),
         stderr: vi.fn().mockResolvedValue(''),
       };
+      const mockRunCommand = vi.fn().mockResolvedValue(mockCommandResult);
       const mockSandbox = {
-        runCommand: vi.fn().mockResolvedValue(mockCommandResult),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        runCommand: mockRunCommand,
+      } as any;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method instead
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.runCommand('session-123', 'echo', ['test']);
 
       expect(result).toEqual({ exitCode: 0, stdout: 'ok', stderr: '' });
-      expect(mockSandbox.runCommand).toHaveBeenCalledWith({
+      expect(mockRunCommand).toHaveBeenCalledWith({
         cmd: 'echo',
         args: ['test'],
         cwd: undefined,
