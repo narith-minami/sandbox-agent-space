@@ -73,6 +73,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       config: session.config,
       runtime: session.runtime,
       prUrl: session.prUrl,
+      prStatus: session.prStatus,
       memo: session.memo,
       archived: session.archived,
       createdAt: session.createdAt,

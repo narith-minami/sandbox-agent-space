@@ -1,10 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { ApiError, SessionListResponse } from '@/types/sandbox';
+import type { ApiError, PrStatus, SessionListResponse, SessionStatus } from '@/types/sandbox';
 
 export interface SessionFilters {
-  status?: ('running' | 'failed' | 'completed')[];
+  status?: SessionStatus[];
+  prStatus?: PrStatus[];
   archived?: boolean;
 }
 
@@ -26,6 +27,10 @@ export function useSessionList({ page = 1, limit = 20, filters }: UseSessionList
       // Add status filter if provided
       if (filters?.status && filters.status.length > 0) {
         params.append('status', filters.status.join(','));
+      }
+
+      if (filters?.prStatus && filters.prStatus.length > 0) {
+        params.append('prStatus', filters.prStatus.join(','));
       }
 
       // Add archived filter if provided

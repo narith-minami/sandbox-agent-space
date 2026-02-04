@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { SandboxRuntime } from '@/lib/sandbox/auth';
-import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
+import type { PrStatus, SandboxConfig, SessionStatus } from '@/types/sandbox';
 import { db } from './client';
 import { type Session, sessions } from './schema';
 
@@ -15,7 +15,8 @@ import { type Session, sessions } from './schema';
  */
 
 export interface ListSessionsFilters {
-  status?: ('running' | 'failed' | 'completed')[];
+  status?: SessionStatus[];
+  prStatus?: PrStatus[];
   archived?: boolean;
 }
 
@@ -54,7 +55,9 @@ export async function getSession(sessionId: string): Promise<Session | undefined
  */
 export async function updateSession(
   sessionId: string,
-  updates: Partial<Pick<Session, 'sandboxId' | 'status' | 'runtime' | 'prUrl' | 'archived'>>
+  updates: Partial<
+    Pick<Session, 'sandboxId' | 'status' | 'runtime' | 'prUrl' | 'prStatus' | 'archived'>
+  >
 ): Promise<Session | undefined> {
   const [session] = await db
     .update(sessions)
@@ -80,6 +83,10 @@ function buildListSessionsWhereClause(filters?: ListSessionsFilters) {
 
   if (filters?.status && filters.status.length > 0) {
     conditions.push(inArray(sessions.status, filters.status));
+  }
+
+  if (filters?.prStatus && filters.prStatus.length > 0) {
+    conditions.push(inArray(sessions.prStatus, filters.prStatus));
   }
 
   return conditions.length > 0 ? and(...conditions) : undefined;

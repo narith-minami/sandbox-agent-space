@@ -11,8 +11,8 @@ export async function GET(request: Request) {
     const status = searchParams
       .get('status')
       ?.split(',')
-      .filter((s) => ['running', 'failed', 'completed'].includes(s)) as
-      | ('running' | 'failed' | 'completed')[]
+      .filter((s) => ['pending', 'running', 'stopping', 'completed', 'failed'].includes(s)) as
+      | ('pending' | 'running' | 'stopping' | 'completed' | 'failed')[]
       | undefined;
 
     const filters = {
@@ -30,6 +30,7 @@ export async function GET(request: Request) {
         config: session.config,
         runtime: session.runtime,
         prUrl: session.prUrl,
+        prStatus: session.prStatus,
         memo: session.memo,
         archived: session.archived,
         createdAt: session.createdAt,

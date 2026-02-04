@@ -44,6 +44,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       config: result.session.config,
       runtime: result.session.runtime,
       prUrl: result.session.prUrl,
+      prStatus: result.session.prStatus,
       memo: result.session.memo,
       createdAt: result.session.createdAt,
       updatedAt: result.session.updatedAt,

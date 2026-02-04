@@ -23,6 +23,8 @@ export interface SandboxConfig {
 // Session status types - aligned with Vercel Sandbox SDK status
 export type SessionStatus = 'pending' | 'running' | 'stopping' | 'completed' | 'failed';
 
+export type PrStatus = 'open' | 'closed' | 'merged';
+
 // Vercel Sandbox status (from SDK)
 export type VercelSandboxStatus =
   | 'pending'
@@ -51,6 +53,7 @@ export interface SandboxSession {
   config: SandboxConfig;
   runtime: SandboxRuntime;
   prUrl?: string | null; // Pull Request URL
+  prStatus?: PrStatus | null;
   memo?: string | null; // Optional memo/notes
   archived?: boolean; // Archive flag
   createdAt: Date;
