@@ -238,6 +238,6 @@ export async function showSessionNotification(
     devLog('[Notifications] Notification shown successfully:', title, sessionId.slice(0, 8));
   } catch (error) {
     devError('[Notifications] Failed to show notification:', error);
-    throw error; // Re-throw to let caller know it failed
+    // Don't re-throw - handle gracefully to avoid breaking the caller
   }
 }

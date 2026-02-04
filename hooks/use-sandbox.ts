@@ -85,16 +85,13 @@ export function useSession(sessionId: string | null) {
       // Trigger notification if:
       // 1. Current status is terminal (completed or failed)
       // 2. Notification has not been shown yet
-      // 3. Either:
-      //    a. This is NOT the first fetch (meaning we've seen a non-terminal status before)
-      //    b. Previous status was explicitly running/pending (we tracked the transition)
-      const hasTransitioned =
-        !isFirstFetchRef.current ||
-        (prevStatusRef.current !== null &&
-          (prevStatusRef.current === 'running' || prevStatusRef.current === 'pending'));
+      // 3. We have seen a non-terminal status before (running or pending)
+      //    This prevents showing notification for sessions that are already complete when first loaded
+      const hasSeenNonTerminalStatus =
+        prevStatusRef.current === 'running' || prevStatusRef.current === 'pending';
 
       const shouldShowNotification =
-        isTerminalStatus && !notificationShownRef.current && hasTransitioned;
+        isTerminalStatus && !notificationShownRef.current && hasSeenNonTerminalStatus;
 
       if (shouldShowNotification && data) {
         devLog(
