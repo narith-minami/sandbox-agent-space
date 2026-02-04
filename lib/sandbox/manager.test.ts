@@ -1,3 +1,4 @@
+import type { Sandbox } from '@vercel/sandbox';
 import { describe, expect, it, vi } from 'vitest';
 import { getSandboxManager, SandboxManager } from './manager';
 
@@ -424,9 +425,10 @@ describe('SandboxManager', () => {
         sandboxId: 'sandbox-123',
         status: 'running',
         writeFiles: mockWriteFiles,
-      } as any;
+      } as Partial<Sandbox> as Sandbox;
 
-      // Spy on the lifecycleManager's method instead
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
       vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       await manager.writeFiles('session-123', [
@@ -443,9 +445,10 @@ describe('SandboxManager', () => {
         sandboxId: 'sandbox-123',
         status: 'running',
         readFileToBuffer: mockReadFileToBuffer,
-      } as any;
+      } as Partial<Sandbox> as Sandbox;
 
-      // Spy on the lifecycleManager's method instead
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
       vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.readFile('session-123', '/tmp/test.txt');
@@ -464,9 +467,10 @@ describe('SandboxManager', () => {
         sandboxId: 'sandbox-123',
         status: 'running',
         runCommand: mockRunCommand,
-      } as any;
+      } as Partial<Sandbox> as Sandbox;
 
-      // Spy on the lifecycleManager's method instead
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
       vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.runCommand('session-123', 'echo', ['test']);
