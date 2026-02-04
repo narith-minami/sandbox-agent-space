@@ -96,17 +96,6 @@ export const SandboxConfigSchema = z
     // Plan text content (used when planSource is 'text')
     planText: z.string().optional().default(''),
 
-    githubToken: z
-      .string()
-      .refine((val) => !val || val.length >= 20, 'GitHub token must be at least 20 characters')
-      .refine(
-        (val) =>
-          !val || val.startsWith('ghp_') || val.startsWith('github_pat_') || val.startsWith('gho_'),
-        'Invalid GitHub token format'
-      )
-      .optional()
-      .default(''),
-
     opencodeAuthJsonB64: z
       .string()
       .refine((val) => {

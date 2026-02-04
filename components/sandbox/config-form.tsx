@@ -27,7 +27,6 @@ const formSchema = z
     memo: z.string().optional(),
     gistUrl: z.string(),
     frontDir: z.string(),
-    githubToken: z.string(),
     opencodeAuthJsonB64: z.string(),
     runtime: z.enum(['node24', 'node22', 'python3.13']),
     snapshotId: z.string().optional(),
@@ -54,7 +53,6 @@ interface ConfigFormProps {
   isLoading?: boolean;
   defaultValues?: Partial<SandboxConfigFormData>;
   commonConfig?: {
-    githubToken?: string;
     opencodeAuthJsonB64?: string;
     gistUrl?: string;
   };
@@ -80,7 +78,6 @@ export function ConfigForm({
       memo: '',
       gistUrl: commonConfig?.gistUrl || '',
       frontDir: '',
-      githubToken: commonConfig?.githubToken || '',
       opencodeAuthJsonB64: commonConfig?.opencodeAuthJsonB64 || '',
       runtime: 'node24',
       snapshotId: '',
@@ -112,7 +109,7 @@ export function ConfigForm({
             {!snapshotId && <PlanSourceSection control={form.control} />}
 
             {/* 2. Repository Information */}
-            {!snapshotId && <RepositorySection control={form.control} />}
+            {!snapshotId && <RepositorySection control={form.control} setValue={form.setValue} />}
 
             {/* 3. Memo Field */}
             <FormTextArea

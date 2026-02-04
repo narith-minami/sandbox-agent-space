@@ -36,6 +36,16 @@ export function useSandboxCreate() {
 
       if (!response.ok) {
         const error: ApiError = await response.json();
+
+        // Handle 401 authentication error with login redirect
+        if (response.status === 401) {
+          const loginUrl =
+            (error.details as { loginUrl?: string })?.loginUrl ||
+            `/login?next=${encodeURIComponent('/sandbox')}`;
+          window.location.href = loginUrl;
+          throw new Error('Authentication required. Redirecting to login...');
+        }
+
         throw new Error(error.error);
       }
 

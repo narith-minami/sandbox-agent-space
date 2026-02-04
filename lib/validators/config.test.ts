@@ -534,7 +534,6 @@ describe('SandboxConfigSchema', () => {
         expect(result.data.planSource).toBe('file');
         expect(result.data.planFile).toBe('plan.md');
         expect(result.data.planText).toBe('');
-        expect(result.data.githubToken).toBe('');
         expect(result.data.opencodeAuthJsonB64).toBe('');
         expect(result.data.runtime).toBe('node24');
         expect(result.data.enableCodeReview).toBe(false);
