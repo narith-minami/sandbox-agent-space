@@ -1,30 +1,17 @@
+import type { Sandbox } from '@vercel/sandbox';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  createMockAuthModule,
+  createMockQueries,
+  createMockSandbox,
+  createMockSandboxModule,
+} from '@/test/helpers';
 import { getSandboxManager, SandboxManager } from './manager';
 
-// Mock dependencies
-vi.mock('@/lib/db/queries', () => ({
-  addLog: vi.fn().mockResolvedValue({}),
-  getSession: vi.fn().mockResolvedValue({}),
-  getLogsBySessionId: vi.fn().mockResolvedValue([]),
-  setSessionSandboxId: vi.fn().mockResolvedValue({}),
-  setSessionStatus: vi.fn().mockResolvedValue({}),
-  updateSession: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock('@vercel/sandbox', () => ({
-  Sandbox: {
-    create: vi.fn(),
-    get: vi.fn(),
-    list: vi.fn(),
-  },
-  Command: vi.fn(),
-}));
-
-vi.mock('./auth', () => ({
-  getSandboxRuntime: vi.fn().mockReturnValue('node24'),
-  getSandboxTimeout: vi.fn().mockReturnValue(600000),
-  requireAuthentication: vi.fn(),
-}));
+// Mock dependencies with shared utilities
+vi.mock('@/lib/db/queries', () => createMockQueries());
+vi.mock('@vercel/sandbox', () => createMockSandboxModule());
+vi.mock('./auth', () => createMockAuthModule());
 
 describe('getSandboxManager', () => {
   it('should return singleton instance', () => {
@@ -43,11 +30,7 @@ describe('SandboxManager', () => {
   describe('createSandbox', () => {
     it('should create sandbox from snapshot', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -68,11 +51,7 @@ describe('SandboxManager', () => {
 
     it('should create sandbox from git repo', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -96,11 +75,7 @@ describe('SandboxManager', () => {
 
     it('should create empty sandbox when no source provided', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
@@ -134,11 +109,7 @@ describe('SandboxManager', () => {
   describe('getSandboxStatus', () => {
     it('should return mapped status', async () => {
       const manager = new SandboxManager();
-      const mockSandbox = {
-        sandboxId: 'sandbox-123',
-        status: 'running',
-        timeout: 600000,
-      };
+      const mockSandbox = createMockSandbox({ sandboxId: 'sandbox-123', status: 'running' });
 
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.get).mockResolvedValue(mockSandbox as never);
@@ -149,6 +120,20 @@ describe('SandboxManager', () => {
     });
 
     it('should return failed status on error', async () => {
+      const manager = new SandboxManager();
+      const error = new Error('Get failed');
+
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { Sandbox } = await import('@vercel/sandbox');
+      vi.mocked(Sandbox.get).mockRejectedValue(error);
+
+      const result = await manager.getSandboxStatus('sandbox-123');
+      expect(result.status).toBe('failed');
+      expect(errorSpy).toHaveBeenCalledWith('Failed to get sandbox status:', error);
+      errorSpy.mockRestore();
+    });
+
+    it('should return failed status when not found', async () => {
       const manager = new SandboxManager();
 
       const error = new Error('Not found');
@@ -348,10 +333,6 @@ describe('SandboxManager', () => {
       const { setSessionStatus, addLog } = await import('@/lib/db/queries');
       const { Sandbox } = await import('@vercel/sandbox');
       vi.mocked(Sandbox.create).mockResolvedValue(mockSandbox as never);
-      vi.spyOn(
-        manager as unknown as { executeCommand: () => Promise<void> },
-        'executeCommand'
-      ).mockResolvedValue();
 
       await manager.createSandbox('session-123', {
         env: {},
@@ -423,26 +404,36 @@ describe('SandboxManager', () => {
   describe('file and command helpers', () => {
     it('should write files to sandbox', async () => {
       const manager = new SandboxManager();
+      const mockWriteFiles = vi.fn().mockResolvedValue(undefined);
       const mockSandbox = {
-        writeFiles: vi.fn().mockResolvedValue(undefined),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        writeFiles: mockWriteFiles,
+      } as Partial<Sandbox> as Sandbox;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       await manager.writeFiles('session-123', [
         { path: '/tmp/test.txt', content: Buffer.from('ok') },
       ]);
 
-      expect(mockSandbox.writeFiles).toHaveBeenCalled();
+      expect(mockWriteFiles).toHaveBeenCalled();
     });
 
     it('should read file from sandbox', async () => {
       const manager = new SandboxManager();
+      const mockReadFileToBuffer = vi.fn().mockResolvedValue(Buffer.from('data'));
       const mockSandbox = {
-        readFileToBuffer: vi.fn().mockResolvedValue(Buffer.from('data')),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        readFileToBuffer: mockReadFileToBuffer,
+      } as Partial<Sandbox> as Sandbox;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.readFile('session-123', '/tmp/test.txt');
       expect(result).toEqual(Buffer.from('data'));
@@ -455,16 +446,21 @@ describe('SandboxManager', () => {
         stdout: vi.fn().mockResolvedValue('ok'),
         stderr: vi.fn().mockResolvedValue(''),
       };
+      const mockRunCommand = vi.fn().mockResolvedValue(mockCommandResult);
       const mockSandbox = {
-        runCommand: vi.fn().mockResolvedValue(mockCommandResult),
-      };
+        sandboxId: 'sandbox-123',
+        status: 'running',
+        runCommand: mockRunCommand,
+      } as Partial<Sandbox> as Sandbox;
 
-      vi.spyOn(manager, 'getSandboxBySession').mockResolvedValue(mockSandbox as never);
+      // Spy on the lifecycleManager's method (using bracket notation for private member)
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private member
+      vi.spyOn(manager['lifecycleManager'], 'getSandboxBySession').mockResolvedValue(mockSandbox);
 
       const result = await manager.runCommand('session-123', 'echo', ['test']);
 
       expect(result).toEqual({ exitCode: 0, stdout: 'ok', stderr: '' });
-      expect(mockSandbox.runCommand).toHaveBeenCalledWith({
+      expect(mockRunCommand).toHaveBeenCalledWith({
         cmd: 'echo',
         args: ['test'],
         cwd: undefined,

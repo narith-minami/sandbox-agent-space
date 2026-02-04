@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SandboxRuntime } from '@/lib/sandbox/auth';
+import {
+  createMockLog,
+  createMockSession,
+  createMockSnapshot,
+  setupMockDatabase,
+} from '@/test/helpers';
 import type { SandboxConfig, SessionStatus } from '@/types/sandbox';
 import {
   addLog,
@@ -21,51 +27,8 @@ import {
 } from './queries';
 import type { Log, Session, SnapshotRecord } from './schema';
 
-// Helper to create a mock session with all required fields
-function createMockSession(overrides: Partial<Session> = {}): Session {
-  return {
-    id: '550e8400-e29b-41d4-a716-446655440000',
-    config: { planSource: 'file', planFile: 'plan.md' } as SandboxConfig,
-    runtime: 'node24' as SandboxRuntime,
-    status: 'pending' as SessionStatus,
-    sandboxId: null,
-    prUrl: null,
-    memo: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    archived: false,
-    ...overrides,
-  };
-}
-
-// Mock the database client
-vi.mock('./client', () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(() => Promise.resolve([])),
-        orderBy: vi.fn(() => Promise.resolve([])),
-        limit: vi.fn(() => Promise.resolve([])),
-        offset: vi.fn(() => Promise.resolve([])),
-      })),
-    })),
-    insert: vi.fn(() => ({
-      values: vi.fn(() => ({
-        returning: vi.fn(() => Promise.resolve([])),
-      })),
-    })),
-    update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(() => ({
-          returning: vi.fn(() => Promise.resolve([])),
-        })),
-      })),
-    })),
-    delete: vi.fn(() => ({
-      where: vi.fn(() => Promise.resolve()),
-    })),
-  },
-}));
+// Mock the database client with shared utilities
+vi.mock('./client', () => setupMockDatabase());
 
 describe('createSession', () => {
   it('should create a session with minimal config', async () => {
@@ -400,20 +363,18 @@ describe('getSessionWithLogs', () => {
     });
 
     const mockLogs: Log[] = [
-      {
+      createMockLog({
         id: '550e8400-e29b-41d4-a716-446655440001',
         sessionId: '550e8400-e29b-41d4-a716-446655440000',
         level: 'info',
         message: 'Session started',
-        timestamp: new Date(),
-      },
-      {
+      }),
+      createMockLog({
         id: '550e8400-e29b-41d4-a716-446655440002',
         sessionId: '550e8400-e29b-41d4-a716-446655440000',
         level: 'error',
         message: 'An error occurred',
-        timestamp: new Date(),
-      },
+      }),
     ];
 
     const { db } = await import('./client');
@@ -461,13 +422,12 @@ describe('getSessionWithLogs', () => {
 
 describe('addLog', () => {
   it('should create a log entry', async () => {
-    const mockLog: Log = {
+    const mockLog = createMockLog({
       id: '550e8400-e29b-41d4-a716-446655440000',
       sessionId: '550e8400-e29b-41d4-a716-446655440001',
       level: 'info',
       message: 'Test message',
-      timestamp: new Date(),
-    };
+    });
 
     const { db } = await import('./client');
     vi.mocked(db.insert).mockImplementation(
@@ -491,20 +451,18 @@ describe('addLog', () => {
 describe('getLogsBySessionId', () => {
   it('should return logs for session', async () => {
     const mockLogs: Log[] = [
-      {
+      createMockLog({
         id: '550e8400-e29b-41d4-a716-446655440000',
         sessionId: '550e8400-e29b-41d4-a716-446655440001',
         level: 'info',
         message: 'Message 1',
-        timestamp: new Date(),
-      },
-      {
+      }),
+      createMockLog({
         id: '550e8400-e29b-41d4-a716-446655440002',
         sessionId: '550e8400-e29b-41d4-a716-446655440001',
         level: 'error',
         message: 'Message 2',
-        timestamp: new Date(),
-      },
+      }),
     ];
 
     const { db } = await import('./client');
@@ -629,16 +587,15 @@ describe('archiveSession', () => {
 
 describe('createSnapshotRecord', () => {
   it('should create snapshot record', async () => {
-    const mockSnapshot: SnapshotRecord = {
+    const mockSnapshot = createMockSnapshot({
       id: '550e8400-e29b-41d4-a716-446655440000',
       snapshotId: 'snap-123',
       sessionId: '550e8400-e29b-41d4-a716-446655440001',
       sourceSandboxId: 'sandbox-123',
       sizeBytes: 1024000,
       status: 'created',
-      createdAt: new Date(),
       expiresAt: new Date(Date.now() + 86400000),
-    };
+    });
 
     const { db } = await import('./client');
     vi.mocked(db.insert).mockImplementation(
@@ -664,16 +621,15 @@ describe('createSnapshotRecord', () => {
 
 describe('getSnapshotRecord', () => {
   it('should return snapshot when found', async () => {
-    const mockSnapshot: SnapshotRecord = {
+    const mockSnapshot = createMockSnapshot({
       id: '550e8400-e29b-41d4-a716-446655440000',
       snapshotId: 'snap-123',
       sessionId: '550e8400-e29b-41d4-a716-446655440001',
       sourceSandboxId: 'sandbox-123',
       sizeBytes: 1024000,
       status: 'created',
-      createdAt: new Date(),
       expiresAt: new Date(Date.now() + 86400000),
-    };
+    });
 
     const { db } = await import('./client');
     vi.mocked(db.select).mockImplementation(
@@ -708,26 +664,24 @@ describe('getSnapshotRecord', () => {
 describe('getSnapshotsBySessionId', () => {
   it('should return snapshots for session', async () => {
     const mockSnapshots: SnapshotRecord[] = [
-      {
+      createMockSnapshot({
         id: '550e8400-e29b-41d4-a716-446655440000',
         snapshotId: 'snap-1',
         sessionId: '550e8400-e29b-41d4-a716-446655440001',
         sourceSandboxId: 'sandbox-123',
         sizeBytes: 1024000,
         status: 'created',
-        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 86400000),
-      },
-      {
+      }),
+      createMockSnapshot({
         id: '550e8400-e29b-41d4-a716-446655440002',
         snapshotId: 'snap-2',
         sessionId: '550e8400-e29b-41d4-a716-446655440001',
         sourceSandboxId: 'sandbox-123',
         sizeBytes: 2048000,
         status: 'deleted',
-        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 86400000),
-      },
+      }),
     ];
 
     const { db } = await import('./client');
@@ -752,26 +706,24 @@ describe('getSnapshotsBySessionId', () => {
 describe('listSnapshotRecords', () => {
   it('should return paginated snapshots', async () => {
     const mockSnapshots: SnapshotRecord[] = [
-      {
+      createMockSnapshot({
         id: '550e8400-e29b-41d4-a716-446655440000',
         snapshotId: 'snap-1',
         sessionId: '550e8400-e29b-41d4-a716-446655440001',
         sourceSandboxId: 'sandbox-123',
         sizeBytes: 1024000,
         status: 'created',
-        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 86400000),
-      },
-      {
+      }),
+      createMockSnapshot({
         id: '550e8400-e29b-41d4-a716-446655440002',
         snapshotId: 'snap-2',
         sessionId: '550e8400-e29b-41d4-a716-446655440003',
         sourceSandboxId: 'sandbox-456',
         sizeBytes: 2048000,
         status: 'created',
-        createdAt: new Date(),
         expiresAt: new Date(Date.now() + 86400000),
-      },
+      }),
     ];
 
     const { db } = await import('./client');
