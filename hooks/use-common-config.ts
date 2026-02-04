@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
 export interface CommonConfig {
-  githubToken?: string;
   opencodeAuthJsonB64?: string;
   gistUrl?: string;
 }

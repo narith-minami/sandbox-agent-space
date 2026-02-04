@@ -10,6 +10,18 @@ import {
   wasPermissionDenied,
 } from './notifications';
 
+function createMockNotification(
+  permission: NotificationPermission,
+  requestPermission?: () => Promise<NotificationPermission>
+): typeof Notification {
+  const MockNotification = function MockNotification() {} as unknown as typeof Notification;
+  Object.defineProperty(MockNotification, 'permission', { value: permission });
+  if (requestPermission) {
+    Object.defineProperty(MockNotification, 'requestPermission', { value: requestPermission });
+  }
+  return MockNotification;
+}
+
 describe('isNotificationSupported', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
@@ -53,9 +65,7 @@ describe('getNotificationPermission', () => {
 
   it('should return current permission when supported', () => {
     // Define Notification class on globalThis to make it accessible
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -65,9 +75,7 @@ describe('getNotificationPermission', () => {
   });
 
   it('should return denied permission', () => {
-    class MockNotification {
-      static permission = 'denied';
-    }
+    const MockNotification = createMockNotification('denied');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -135,10 +143,7 @@ describe('requestNotificationPermission', () => {
 
   it('should request permission and return granted', async () => {
     const mockRequestPermission = vi.fn().mockResolvedValue('granted');
-    class MockNotification {
-      static permission = 'default';
-      static requestPermission = mockRequestPermission;
-    }
+    const MockNotification = createMockNotification('default', mockRequestPermission);
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -154,10 +159,7 @@ describe('requestNotificationPermission', () => {
 
   it('should request permission and return denied', async () => {
     const mockRequestPermission = vi.fn().mockResolvedValue('denied');
-    class MockNotification {
-      static permission = 'default';
-      static requestPermission = mockRequestPermission;
-    }
+    const MockNotification = createMockNotification('default', mockRequestPermission);
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -188,9 +190,7 @@ describe('showSessionNotification', () => {
   });
 
   it('should not show notification for non-terminal statuses', async () => {
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -208,9 +208,7 @@ describe('showSessionNotification', () => {
   });
 
   it('should show notification for completed status', async () => {
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -238,9 +236,7 @@ describe('showSessionNotification', () => {
   });
 
   it('should show notification for failed status', async () => {
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -268,9 +264,7 @@ describe('showSessionNotification', () => {
   });
 
   it('should include PR info when PR URL is provided', async () => {
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -293,9 +287,7 @@ describe('showSessionNotification', () => {
   });
 
   it('should not show notification when permission is not granted', async () => {
-    class MockNotification {
-      static permission = 'denied';
-    }
+    const MockNotification = createMockNotification('denied');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -321,9 +313,7 @@ describe('showSessionNotification', () => {
 
   it('should handle service worker registration failure gracefully', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,
@@ -352,9 +342,7 @@ describe('showSessionNotification', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockShowNotification.mockRejectedValue(new Error('Notification failed'));
 
-    class MockNotification {
-      static permission = 'granted';
-    }
+    const MockNotification = createMockNotification('granted');
     vi.stubGlobal('Notification', MockNotification);
     vi.stubGlobal('window', {
       Notification: MockNotification,

@@ -50,7 +50,6 @@ function SandboxPageContent() {
         baseBranch: config.baseBranch || 'main',
         frontDir: config.frontDir,
         memo: cloneSession.memo || '',
-        githubToken: '', // Don't clone sensitive data
         opencodeAuthJsonB64: '', // Don't clone sensitive data
         runtime: config.runtime || 'node24',
         snapshotId: config.snapshotId || '',
@@ -75,7 +74,6 @@ function SandboxPageContent() {
         repoSlug: lastUsed.repoSlug || '',
         baseBranch: lastUsed.baseBranch,
         frontDir: lastUsed.frontDir,
-        githubToken: '',
         opencodeAuthJsonB64: '',
         gistUrl: '',
         runtime: 'node24',
@@ -106,7 +104,6 @@ function SandboxPageContent() {
         repoSlug: data.repoSlug,
         baseBranch: data.baseBranch,
         frontDir: data.frontDir,
-        githubToken: data.githubToken,
         opencodeAuthJsonB64: data.opencodeAuthJsonB64,
         runtime: data.runtime,
         snapshotId: data.snapshotId,

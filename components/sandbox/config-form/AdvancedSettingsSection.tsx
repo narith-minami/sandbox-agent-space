@@ -10,7 +10,6 @@ import { RuntimeSelector } from './RuntimeSelector';
 interface AdvancedSettingsSectionProps {
   control: Control<SandboxConfigFormData>;
   commonConfig?: {
-    githubToken?: string;
     opencodeAuthJsonB64?: string;
     gistUrl?: string;
   };
@@ -18,11 +17,9 @@ interface AdvancedSettingsSectionProps {
 
 export function AdvancedSettingsSection({ control, commonConfig }: AdvancedSettingsSectionProps) {
   const snapshotId = useWatch({ control, name: 'snapshotId' });
-  const githubToken = useWatch({ control, name: 'githubToken' });
   const opencodeAuthJsonB64 = useWatch({ control, name: 'opencodeAuthJsonB64' });
   const gistUrl = useWatch({ control, name: 'gistUrl' });
 
-  const hasCommonGithubToken = !!(commonConfig?.githubToken || githubToken);
   const hasCommonOpencode = !!(commonConfig?.opencodeAuthJsonB64 || opencodeAuthJsonB64);
   const hasCommonGistUrl = !!(commonConfig?.gistUrl || gistUrl);
 
@@ -62,20 +59,6 @@ export function AdvancedSettingsSection({ control, commonConfig }: AdvancedSetti
           description='Directory containing frontend code (leave empty for root)'
         />
       )}
-
-      <FormTextField
-        control={control}
-        name='githubToken'
-        label='GitHub Token'
-        placeholder={hasCommonGithubToken ? '••••••••' : 'ghp_...'}
-        description={
-          hasCommonGithubToken
-            ? 'Personal access token with repo permissions (leave empty to use common config)'
-            : 'Personal access token with repo permissions'
-        }
-        type='password'
-        badge={hasCommonGithubToken ? '(Using common config)' : undefined}
-      />
 
       <FormTextField
         control={control}

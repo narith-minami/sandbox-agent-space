@@ -328,12 +328,20 @@ describe('isSnapshotValid', () => {
 
 describe('getSnapshotExpirationInfo', () => {
   it('should return correct days and hours for future date', () => {
-    const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000); // 3 days, 5 hours
-    const result = getSnapshotExpirationInfo(expiresAt);
+    const now = new Date('2026-02-04T00:00:00Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
 
-    expect(result.isExpired).toBe(false);
-    expect(result.daysRemaining).toBe(3);
-    expect(result.hoursRemaining).toBe(5);
+    try {
+      const expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000); // 3 days, 5 hours
+      const result = getSnapshotExpirationInfo(expiresAt);
+
+      expect(result.isExpired).toBe(false);
+      expect(result.daysRemaining).toBe(3);
+      expect(result.hoursRemaining).toBe(5);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should return expired true for past date', () => {

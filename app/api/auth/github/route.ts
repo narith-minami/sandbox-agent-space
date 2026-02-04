@@ -20,7 +20,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   redirectUrl.searchParams.set('client_id', clientId);
   redirectUrl.searchParams.set('redirect_uri', `${url.origin}/api/auth/github/callback`);
-  redirectUrl.searchParams.set('scope', 'read:user');
+  redirectUrl.searchParams.set('scope', 'read:user repo');
   redirectUrl.searchParams.set('state', state);
 
   return NextResponse.redirect(redirectUrl.toString());

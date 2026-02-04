@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getGitHubSessionForApi } from '@/lib/auth/get-github-session';
 import { createSession } from '@/lib/db/queries';
 import { checkRateLimit, getClientIp, getRateLimitHeaders } from '@/lib/rate-limit';
 import { getAuthMethod, isAuthenticationAvailable } from '@/lib/sandbox/auth';
@@ -9,6 +10,24 @@ import type { ApiError, CreateSandboxResponse } from '@/types/sandbox';
 
 export async function POST(request: Request) {
   try {
+    // Get GitHub session (returns null if not authenticated)
+    const githubSessionResult = await getGitHubSessionForApi();
+
+    // Check if user is authenticated with GitHub
+    if (!githubSessionResult && !process.env.COMMON_GITHUB_TOKEN) {
+      return NextResponse.json<ApiError>(
+        {
+          error: 'GitHub authentication required',
+          code: 'AUTH_REQUIRED',
+          details: {
+            message: 'Please authenticate with GitHub to create a sandbox',
+            loginUrl: `/login?next=${encodeURIComponent('/sandbox')}`,
+          },
+        },
+        { status: 401 }
+      );
+    }
+
     // Check if Vercel authentication is available
     if (!isAuthenticationAvailable()) {
       return NextResponse.json<ApiError>(
@@ -62,8 +81,11 @@ export async function POST(request: Request) {
     const config = validationResult.data;
     const runtime = config.runtime || 'node24';
 
+    // Get GitHub token from session (primary) or environment variable (fallback)
+    const githubToken =
+      githubSessionResult?.session.accessToken || process.env.COMMON_GITHUB_TOKEN || '';
+
     // Use common config as fallback for empty values
-    const githubToken = config.githubToken || process.env.COMMON_GITHUB_TOKEN || '';
     const opencodeAuthJsonB64 =
       config.opencodeAuthJsonB64 || process.env.COMMON_OPENCODE_AUTH_JSON_B64 || '';
     const gistUrl = config.gistUrl || process.env.COMMON_GIST_URL || '';
@@ -76,7 +98,7 @@ export async function POST(request: Request) {
           code: 'VALIDATION_ERROR',
           details: {
             message:
-              'Please provide a GitHub token or set COMMON_GITHUB_TOKEN environment variable',
+              'Please authenticate with GitHub or set COMMON_GITHUB_TOKEN environment variable',
           },
         },
         { status: 400 }

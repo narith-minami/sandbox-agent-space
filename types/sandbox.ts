@@ -11,7 +11,6 @@ export interface SandboxConfig {
   planFile: string;
   planText: string;
   planSource: 'file' | 'text';
-  githubToken: string;
   opencodeAuthJsonB64: string;
   // New: runtime selection
   runtime?: SandboxRuntime;
