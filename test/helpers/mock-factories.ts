@@ -23,6 +23,7 @@ export function createMockSession(overrides: Partial<Session> = {}): Session {
     status: 'pending' as SessionStatus,
     sandboxId: null,
     prUrl: null,
+    prStatus: null,
     memo: null,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
