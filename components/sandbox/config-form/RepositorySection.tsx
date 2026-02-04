@@ -1,8 +1,9 @@
 'use client';
 
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Control, UseFormSetValue } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -31,8 +32,20 @@ interface RepositorySectionProps {
   setValue: UseFormSetValue<SandboxConfigFormData>;
 }
 
+interface LoginUrlError {
+  loginUrl?: string;
+}
+
+function getLoginUrl(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null;
+  if (!('loginUrl' in error)) return null;
+  const loginUrl = (error as LoginUrlError).loginUrl;
+  return typeof loginUrl === 'string' ? loginUrl : null;
+}
+
 export function RepositorySection({ control, setValue }: RepositorySectionProps) {
   const { data: repos = [], isLoading: reposLoading, error: reposError } = useGitHubRepos();
+  const repoUrl = useWatch({ control, name: 'repoUrl' });
 
   const [selectedRepo, setSelectedRepo] = useState<{
     owner: string;
@@ -40,11 +53,33 @@ export function RepositorySection({ control, setValue }: RepositorySectionProps)
     defaultBranch: string;
   } | null>(null);
 
-  const { data: branches = [], isLoading: branchesLoading } = useGitHubBranches({
+  const {
+    data: branches = [],
+    isLoading: branchesLoading,
+    error: branchesError,
+  } = useGitHubBranches({
     owner: selectedRepo?.owner || '',
     repo: selectedRepo?.repo || '',
     enabled: !!selectedRepo,
   });
+
+  useEffect(() => {
+    if (!repos.length || !repoUrl || selectedRepo) return;
+    const initialRepo = repos.find((repo) => repo.htmlUrl === repoUrl);
+    if (!initialRepo) return;
+    setSelectedRepo({
+      owner: initialRepo.owner,
+      repo: initialRepo.name,
+      defaultBranch: initialRepo.defaultBranch,
+    });
+  }, [repoUrl, repos, selectedRepo]);
+
+  useEffect(() => {
+    const loginUrl = getLoginUrl(reposError) || getLoginUrl(branchesError);
+    if (loginUrl) {
+      window.location.href = loginUrl;
+    }
+  }, [branchesError, reposError]);
 
   return (
     <div className='space-y-4 p-4 border rounded-lg bg-muted/30'>

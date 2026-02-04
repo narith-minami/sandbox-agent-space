@@ -371,62 +371,6 @@ describe('SandboxConfigSchema', () => {
     });
   });
 
-  describe('githubToken validation', () => {
-    it('should accept valid ghp_ token', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept valid github_pat_ token', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: 'github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept valid gho_ token', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: 'gho_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject short token', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: 'ghp_short',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid prefix', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: 'invalid_token_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it('should allow empty token', () => {
-      const result = SandboxConfigSchema.safeParse({
-        githubToken: '',
-        planSource: 'file',
-        planFile: 'plan.md',
-      });
-      expect(result.success).toBe(true);
-    });
-  });
-
   describe('opencodeAuthJsonB64 validation', () => {
     it('should accept valid base64 JSON', () => {
       const validJson = JSON.stringify({ key: 'value' });

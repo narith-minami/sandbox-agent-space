@@ -29,8 +29,9 @@ export function useGitHubRepos() {
 
         // Handle 401 authentication error with redirect
         if (response.status === 401 && errorData.loginUrl) {
-          window.location.href = errorData.loginUrl;
-          throw new Error('Authentication required. Redirecting to login...');
+          const authError = new Error('Authentication required. Redirecting to login...');
+          (authError as Error & { loginUrl?: string }).loginUrl = errorData.loginUrl;
+          throw authError;
         }
 
         // Handle rate limiting
@@ -51,7 +52,7 @@ export function useGitHubRepos() {
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     retry: (failureCount, error) => {
       // Don't retry on 401 (authentication required)
-      if (error instanceof Error && error.message.includes('Authentication required')) {
+      if (error instanceof Error && 'loginUrl' in error) {
         return false;
       }
       // Don't retry on 429 (rate limit exceeded)

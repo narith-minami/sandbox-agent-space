@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { POST } from './route';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+let POST!: typeof import('./route').POST;
 
 // Create fresh mocks for each test
 const mockCreateSession = vi.fn();
@@ -16,6 +17,8 @@ const mockCreateSandbox = vi.fn().mockResolvedValue({
   runtime: 'node24',
 });
 const mockSafeParseSandboxConfig = vi.fn();
+const mockGetGitHubSessionForApi = vi.fn();
+const mockValidateGitHubAccess = vi.fn();
 
 // Mock all dependencies
 vi.mock('@/lib/db/queries', () => ({
@@ -43,12 +46,23 @@ vi.mock('@/lib/validators/config', () => ({
   safeParseSandboxConfig: (...args: unknown[]) => mockSafeParseSandboxConfig(...args),
 }));
 
+vi.mock('@/lib/auth/get-github-session', () => ({
+  getGitHubSessionForApi: (...args: unknown[]) => mockGetGitHubSessionForApi(...args),
+}));
+
+vi.mock('@/lib/sandbox/github-validation', () => ({
+  validateGitHubAccess: (...args: unknown[]) => mockValidateGitHubAccess(...args),
+}));
+
+beforeAll(async () => {
+  ({ POST } = await import('./route'));
+});
+
 describe('POST /api/sandbox/create', () => {
   const validConfig = {
     planSource: 'file',
     planFile: 'plan.md',
     runtime: 'node24',
-    githubToken: 'ghp_xxxxxxxxxxxxxxxxxxxx',
     opencodeAuthJsonB64: Buffer.from(JSON.stringify({ key: 'value' })).toString('base64'),
     gistUrl: 'https://gist.githubusercontent.com/user/123/raw/script.sh',
   };
@@ -68,6 +82,14 @@ describe('POST /api/sandbox/create', () => {
     mockCreateSandbox.mockResolvedValue({
       sandboxId: 'sandbox-123',
       runtime: 'node24',
+    });
+    mockGetGitHubSessionForApi.mockResolvedValue({
+      session: { accessToken: 'ghp_xxxxxxxxxxxxxxxxxxxx' },
+    });
+    mockValidateGitHubAccess.mockResolvedValue({
+      success: true,
+      login: 'test-user',
+      repo: { owner: 'test-owner', repo: 'test-repo' },
     });
   });
 
@@ -168,12 +190,10 @@ describe('POST /api/sandbox/create', () => {
     expect(body.code).toBe('VALIDATION_ERROR');
   });
 
-  it('should return 400 when GitHub token is missing', async () => {
-    const configWithoutToken = { ...validConfig, githubToken: '' };
-
+  it('should return 401 when GitHub authentication is missing', async () => {
     mockSafeParseSandboxConfig.mockReturnValue({
       success: true,
-      data: configWithoutToken,
+      data: validConfig,
     });
 
     mockCheckRateLimit.mockResolvedValue({
@@ -182,13 +202,23 @@ describe('POST /api/sandbox/create', () => {
       reset: Date.now() + 3600000,
     });
 
-    const request = createMockRequest(configWithoutToken);
+    mockGetGitHubSessionForApi.mockResolvedValue(null);
+
+    const originalEnv = process.env.COMMON_GITHUB_TOKEN;
+    process.env.COMMON_GITHUB_TOKEN = '';
+
+    const request = createMockRequest(validConfig);
     const response = await POST(request);
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
     const body = await response.json();
-    expect(body.code).toBe('VALIDATION_ERROR');
-    expect(body.error).toContain('GitHub token');
+    expect(body.code).toBe('AUTH_REQUIRED');
+
+    if (originalEnv !== undefined) {
+      process.env.COMMON_GITHUB_TOKEN = originalEnv;
+    } else {
+      delete process.env.COMMON_GITHUB_TOKEN;
+    }
   });
 
   it('should return 400 when opencode auth is missing', async () => {

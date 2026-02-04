@@ -29,10 +29,10 @@ interface GitHubApiError {
 }
 
 interface RouteParams {
-  params: Promise<{
+  params: {
     owner: string;
     repo: string;
-  }>;
+  };
 }
 
 export async function GET(request: Request, { params }: RouteParams): Promise<NextResponse> {
@@ -59,7 +59,7 @@ export async function GET(request: Request, { params }: RouteParams): Promise<Ne
   const { session } = githubSessionResult;
 
   try {
-    const { owner, repo } = await params;
+    const { owner, repo } = params;
 
     // Fetch branches from GitHub API
     const url = new URL(request.url);
