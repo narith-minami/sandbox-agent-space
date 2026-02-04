@@ -15,8 +15,17 @@ export async function GET(request: Request) {
     const status = statusParam
       ? statusParam
           .split(',')
-          .filter((s): s is 'running' | 'failed' | 'completed' =>
-            ['running', 'failed', 'completed'].includes(s)
+          .filter((s): s is 'pending' | 'running' | 'stopping' | 'completed' | 'failed' =>
+            ['pending', 'running', 'stopping', 'completed', 'failed'].includes(s)
+          )
+      : undefined;
+
+    const prStatusParam = searchParams.get('prStatus');
+    const prStatus = prStatusParam
+      ? prStatusParam
+          .split(',')
+          .filter((s): s is 'open' | 'closed' | 'merged' =>
+            ['open', 'closed', 'merged'].includes(s)
           )
       : undefined;
 
@@ -39,6 +48,7 @@ export async function GET(request: Request) {
     // Validate filters
     const filterResult = SessionListFilterSchema.safeParse({
       status,
+      prStatus,
       archived: archived === null ? undefined : archived,
     });
 
@@ -67,6 +77,7 @@ export async function GET(request: Request) {
         config: session.config,
         runtime: session.runtime,
         prUrl: session.prUrl,
+        prStatus: session.prStatus,
         memo: session.memo,
         archived: session.archived,
         createdAt: session.createdAt,

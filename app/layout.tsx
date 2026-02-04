@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AuthStatus } from '@/components/auth/auth-status';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ServiceWorkerRegistration } from '@/components/providers/service-worker-registration';
+import { Sidebar } from '@/components/sidebar/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 import type { Metadata } from 'next';
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body className='antialiased'>
         <QueryProvider>
           <ServiceWorkerRegistration />
-          <div className='min-h-screen bg-background'>
+          <div className='min-h-screen bg-background flex flex-col'>
             <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='container flex h-14 items-center justify-between px-4 mx-auto'>
                 <Link href='/' className='mr-6 flex items-center space-x-2'>
@@ -58,7 +59,12 @@ export default function RootLayout({
                 </div>
               </div>
             </header>
-            <main className='container px-4 py-6 mx-auto'>{children}</main>
+            <div className='flex flex-1 min-h-0'>
+              <Sidebar />
+              <main className='flex-1 min-w-0 overflow-auto'>
+                <div className='container px-4 py-6 mx-auto'>{children}</div>
+              </main>
+            </div>
           </div>
           <Toaster />
         </QueryProvider>

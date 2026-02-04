@@ -1,6 +1,6 @@
 import { bigint, boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import type { SandboxRuntime } from '@/lib/sandbox/auth';
-import type { LogLevel, SandboxConfig, SessionStatus } from '@/types/sandbox';
+import type { LogLevel, PrStatus, SandboxConfig, SessionStatus } from '@/types/sandbox';
 
 // Sessions table
 export const sessions = pgTable('sessions', {
@@ -10,6 +10,7 @@ export const sessions = pgTable('sessions', {
   config: jsonb('config').$type<SandboxConfig>().notNull(),
   runtime: text('runtime').$type<SandboxRuntime>().notNull().default('node24'),
   prUrl: text('pr_url'), // Pull Request URL
+  prStatus: text('pr_status').$type<PrStatus>(), // Pull Request status
   memo: text('memo'), // Optional memo/notes
   archived: boolean('archived').default(false).notNull(), // Archive flag
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

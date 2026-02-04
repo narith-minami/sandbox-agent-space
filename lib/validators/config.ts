@@ -166,7 +166,8 @@ export type PaginationParams = z.infer<typeof PaginationSchema>;
 
 // Session list filter schema
 export const SessionListFilterSchema = z.object({
-  status: z.enum(['running', 'failed', 'completed']).array().optional(),
+  status: z.enum(['pending', 'running', 'stopping', 'completed', 'failed']).array().optional(),
+  prStatus: z.enum(['open', 'closed', 'merged']).array().optional(),
   archived: z
     .union([z.boolean(), z.string()])
     .transform((val) => {

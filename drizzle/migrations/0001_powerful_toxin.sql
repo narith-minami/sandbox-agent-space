@@ -1,4 +1,4 @@
-CREATE TABLE "snapshots" (
+CREATE TABLE IF NOT EXISTS "snapshots" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"snapshot_id" text NOT NULL,
 	"session_id" uuid,
@@ -10,5 +10,24 @@ CREATE TABLE "snapshots" (
 	CONSTRAINT "snapshots_snapshot_id_unique" UNIQUE("snapshot_id")
 );
 --> statement-breakpoint
-ALTER TABLE "sessions" ADD COLUMN "runtime" text DEFAULT 'node24' NOT NULL;--> statement-breakpoint
-ALTER TABLE "snapshots" ADD CONSTRAINT "snapshots_session_id_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."sessions"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "sessions" ADD COLUMN IF NOT EXISTS "runtime" text DEFAULT 'node24' NOT NULL;--> statement-breakpoint
+DO $$
+BEGIN
+  IF to_regclass('public.snapshots') IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'snapshots_snapshot_id_unique'
+    ) THEN
+    ALTER TABLE "snapshots"
+      ADD CONSTRAINT "snapshots_snapshot_id_unique" UNIQUE("snapshot_id");
+  END IF;
+
+  IF to_regclass('public.snapshots') IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'snapshots_session_id_sessions_id_fk'
+    ) THEN
+    ALTER TABLE "snapshots"
+      ADD CONSTRAINT "snapshots_session_id_sessions_id_fk"
+      FOREIGN KEY ("session_id") REFERENCES "public"."sessions"("id")
+      ON DELETE set null ON UPDATE no action;
+  END IF;
+END $$;

@@ -1,1 +1,1 @@
-ALTER TABLE "sessions" ADD COLUMN "pr_url" text;
+ALTER TABLE "sessions" ADD COLUMN IF NOT EXISTS "pr_url" text;
