@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { POST } from './route';
 
 // Create fresh mocks for each test
 const mockCreateSession = vi.fn();
@@ -41,8 +42,6 @@ vi.mock('@/lib/sandbox/manager', () => ({
 vi.mock('@/lib/validators/config', () => ({
   safeParseSandboxConfig: (...args: unknown[]) => mockSafeParseSandboxConfig(...args),
 }));
-
-import { POST } from './route';
 
 describe('POST /api/sandbox/create', () => {
   const validConfig = {
