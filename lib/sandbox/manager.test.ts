@@ -293,6 +293,8 @@ describe('SandboxManager', () => {
         sandboxId: 'sandbox-123',
         status: 'running',
         runtime: 'node24',
+        modelProvider: 'anthropic',
+        modelId: 'claude-3-5-sonnet-20241022',
         config: {
           planSource: 'file',
           planFile: 'plan.md',
@@ -373,6 +375,8 @@ describe('SandboxManager', () => {
         sandboxId: 'sandbox-123',
         status: 'completed',
         runtime: 'node24',
+        modelProvider: 'anthropic',
+        modelId: 'claude-3-5-sonnet-20241022',
         config: {
           planSource: 'file',
           planFile: 'plan.md',

@@ -26,7 +26,7 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
         name='planSource'
         render={({ field }) => (
           <FormItem>
-            <FormLabel className='text-base font-semibold'>Plan Source</FormLabel>
+            <FormLabel className='text-base font-semibold'>タスク入力</FormLabel>
             <FormControl>
               <Tabs
                 value={field.value}
@@ -34,8 +34,8 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                 className='w-full'
               >
                 <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value='file'>Use Repository File</TabsTrigger>
-                  <TabsTrigger value='text'>Enter Text Directly</TabsTrigger>
+                  <TabsTrigger value='file'>リポジトリ内ファイル</TabsTrigger>
+                  <TabsTrigger value='text'>テキスト入力</TabsTrigger>
                 </TabsList>
                 <TabsContent value='file' className='mt-4'>
                   <FormField
@@ -53,9 +53,7 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                             value={typeof planField.value === 'boolean' ? '' : planField.value}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Path to the plan file in your repository (e.g., docs/plan.md)
-                        </FormDescription>
+                        <FormDescription>リポジトリ内のプランファイルパス</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -72,15 +70,15 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder='Enter your plan content here in Markdown format...'
-                            rows={10}
-                            className='font-mono text-sm'
+                            placeholder='やりたいこと、タスクの詳細、期待するアウトプットを記載...'
+                            rows={12}
+                            className='font-mono text-sm min-h-[240px]'
                             {...textField}
                             value={typeof textField.value === 'boolean' ? '' : textField.value}
                           />
                         </FormControl>
                         <FormDescription>
-                          Your plan content will be saved as a Markdown file in the sandbox
+                          入力内容はサンドボックス内でMarkdownとして保存されます
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

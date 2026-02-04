@@ -64,7 +64,7 @@ export class AuthenticationValidator {
             code: 'AUTH_REQUIRED',
             details: {
               message: 'Please authenticate with GitHub to create a sandbox',
-              loginUrl: `/login?next=${encodeURIComponent('/sandbox')}`,
+              loginUrl: `/login?next=${encodeURIComponent('/')}`,
             },
           },
           { status: 401 }

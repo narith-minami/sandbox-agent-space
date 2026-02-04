@@ -41,7 +41,7 @@ export function useSandboxCreate() {
         if (response.status === 401) {
           const loginUrl =
             (error.details as { loginUrl?: string })?.loginUrl ||
-            `/login?next=${encodeURIComponent('/sandbox')}`;
+            `/login?next=${encodeURIComponent('/')}`;
           window.location.href = loginUrl;
           throw new Error('Authentication required. Redirecting to login...');
         }

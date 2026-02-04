@@ -37,7 +37,6 @@ export function useSessionCloning(
         baseBranch: config.baseBranch || 'main',
         frontDir: config.frontDir,
         memo: cloneSession.memo || '',
-        opencodeAuthJsonB64: '', // Don't clone sensitive data
         runtime: config.runtime || 'node24',
         snapshotId: config.snapshotId || '',
         enableCodeReview: config.enableCodeReview ?? false,
@@ -61,11 +60,9 @@ export function useSessionCloning(
         repoSlug: lastUsed.repoSlug || '',
         baseBranch: lastUsed.baseBranch,
         frontDir: lastUsed.frontDir,
-        opencodeAuthJsonB64: '',
         gistUrl: '',
         runtime: 'node24',
         snapshotId: '',
-        enableCodeReview: true,
       });
     }
   }, [cloneSession, isCloneLoading]);

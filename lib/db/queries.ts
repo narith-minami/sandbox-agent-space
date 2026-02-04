@@ -3,11 +3,13 @@ import { db } from './client';
 import { type Log, logs, type Session, sessions } from './schema';
 
 export * from './log-queries';
+export * from './preset-queries';
 // Re-export types
 export type { ListSessionsFilters } from './session-queries';
 // Re-export all query functions for backward compatibility
 export * from './session-queries';
 export * from './snapshot-queries';
+export * from './user-settings-queries';
 
 /**
  * Get a session with all its logs

@@ -1,17 +1,18 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ChevronDown, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { AdvancedSettingsSection } from './config-form/AdvancedSettingsSection';
+import { getModelProvider } from '@/lib/constants/models';
+import type { EnvironmentPreset, UserSettings } from '@/types/sandbox';
+import { EnvironmentPresetSelector } from './config-form/EnvironmentPresetSelector';
 import { FormTextArea } from './config-form/FormField';
-import { PlanSourceSection } from './config-form/PlanSourceSection';
+import { ModelSelector } from './config-form/ModelSelector';
 import { RepositorySection } from './config-form/RepositorySection';
 import { RUNTIME_OPTIONS } from './config-form/RuntimeSelector';
 
@@ -29,11 +30,16 @@ const formSchema = z
     frontDir: z.string(),
     opencodeAuthJsonB64: z.string(),
     runtime: z.enum(['node24', 'node22', 'python3.13']),
+    modelProvider: z.string(),
+    modelId: z.string(),
     snapshotId: z.string().optional(),
     enableCodeReview: z.boolean(),
   })
   .refine(
     (data) => {
+      if (data.snapshotId && data.snapshotId.length > 0) {
+        return true;
+      }
       // Validate that either planFile or planText is provided based on planSource
       if (data.planSource === 'file') {
         return data.planFile && data.planFile.length > 0;
@@ -56,6 +62,8 @@ interface ConfigFormProps {
     opencodeAuthJsonB64?: string;
     gistUrl?: string;
   };
+  userSettings?: UserSettings | null;
+  presets?: EnvironmentPreset[];
 }
 
 export function ConfigForm({
@@ -63,13 +71,15 @@ export function ConfigForm({
   isLoading = false,
   defaultValues,
   commonConfig,
+  userSettings,
+  presets = [],
 }: ConfigFormProps) {
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
   const form = useForm<SandboxConfigFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      planSource: 'file',
+      planSource: 'text',
       planFile: '',
       planText: '',
       repoUrl: '',
@@ -78,65 +88,87 @@ export function ConfigForm({
       memo: '',
       gistUrl: commonConfig?.gistUrl || '',
       frontDir: '',
-      opencodeAuthJsonB64: commonConfig?.opencodeAuthJsonB64 || '',
+      opencodeAuthJsonB64:
+        userSettings?.opencodeAuthJsonB64 || commonConfig?.opencodeAuthJsonB64 || '',
       runtime: 'node24',
+      modelProvider: 'anthropic',
+      modelId: 'claude-3-5-sonnet-20241022',
       snapshotId: '',
-      enableCodeReview: false,
+      enableCodeReview: userSettings?.enableCodeReview ?? false,
       ...defaultValues,
     },
   });
 
   const selectedRuntime = form.watch('runtime');
-  const snapshotId = form.watch('snapshotId');
+  const modelId = form.watch('modelId');
+
+  const selectedPreset = useMemo(
+    () => presets.find((preset) => preset.id === selectedPresetId) || null,
+    [presets, selectedPresetId]
+  );
+
+  // Sync modelProvider when modelId changes
+  useEffect(() => {
+    if (modelId) {
+      const provider = getModelProvider(modelId);
+      if (provider && provider !== form.getValues('modelProvider')) {
+        form.setValue('modelProvider', provider);
+      }
+    }
+  }, [modelId, form]);
+
+  useEffect(() => {
+    if (!selectedPreset) return;
+    form.setValue('gistUrl', selectedPreset.gistUrl || '');
+    form.setValue('snapshotId', selectedPreset.snapshotId || '');
+    form.setValue('frontDir', selectedPreset.workdir || '');
+  }, [form, selectedPreset]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sandbox Configuration</CardTitle>
-        <CardDescription>
-          Configure the coding agent sandbox with your repository settings. Powered by Vercel
-          Sandbox SDK for isolated microVM execution.
-          <br />
-          <span className='text-sm text-muted-foreground mt-1'>
-            Pull Request URLs will be automatically detected from sandbox logs.
-          </span>
-        </CardDescription>
+        <CardTitle className='flex items-center gap-2'>
+          <Sparkles className='h-5 w-5 text-primary' />
+          サンドボックス作成
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
-            {/* 1. Plan Source */}
-            {!snapshotId && <PlanSourceSection control={form.control} />}
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
+            <div className='grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'>
+              <div className='lg:col-span-1'>
+                <RepositorySection control={form.control} setValue={form.setValue} compact />
+              </div>
+              <div>
+                <ModelSelector control={form.control} variant='select' />
+              </div>
+              <div>
+                <EnvironmentPresetSelector
+                  presets={presets}
+                  selectedPresetId={selectedPresetId}
+                  onSelectPreset={setSelectedPresetId}
+                  control={form.control}
+                  defaultGistUrl={commonConfig?.gistUrl}
+                />
+              </div>
+            </div>
 
-            {/* 2. Repository Information */}
-            {!snapshotId && <RepositorySection control={form.control} setValue={form.setValue} />}
-
-            {/* 3. Memo Field */}
             <FormTextArea
               control={form.control}
-              name='memo'
-              label='Memo (Optional)'
-              placeholder='Add notes about this sandbox session...'
-              description='Optional notes or description for this sandbox session'
-              rows={3}
+              name='planText'
+              label='タスク'
+              placeholder='やりたいこと、タスクの詳細、期待するアウトプットを記載...'
+              description='入力内容はサンドボックス内でMarkdownとして保存されます'
+              rows={18}
+              className='min-h-[320px]'
             />
 
-            {/* 4. Optional Advanced Settings - Collapsible */}
-            <Collapsible open={showOptionalFields} onOpenChange={setShowOptionalFields}>
-              <CollapsibleTrigger asChild>
-                <Button type='button' variant='outline' className='w-full justify-between'>
-                  <span>Advanced Settings (Optional)</span>
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${showOptionalFields ? 'rotate-180' : ''}`}
-                  />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <AdvancedSettingsSection control={form.control} commonConfig={commonConfig} />
-              </CollapsibleContent>
-            </Collapsible>
+            <input type='hidden' {...form.register('modelProvider')} />
+            <input type='hidden' {...form.register('planSource')} />
+            <input type='hidden' {...form.register('planFile')} />
+            <input type='hidden' {...form.register('opencodeAuthJsonB64')} />
+            <input type='hidden' {...form.register('enableCodeReview')} />
 
-            {/* Submit Button */}
             <div className='pt-2'>
               <Button type='submit' className='w-full' disabled={isLoading}>
                 {isLoading ? (

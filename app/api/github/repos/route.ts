@@ -56,7 +56,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       {
         error: 'Authentication required',
         code: 'AUTH_REQUIRED',
-        loginUrl: `/login?next=${encodeURIComponent('/sandbox')}`,
+        loginUrl: `/login?next=${encodeURIComponent('/')}`,
       },
       { status: 401 }
     );

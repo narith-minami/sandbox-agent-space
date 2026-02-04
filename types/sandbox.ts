@@ -18,6 +18,10 @@ export interface SandboxConfig {
   snapshotId?: string;
   // New: enable code review (default: false)
   enableCodeReview?: boolean;
+  // New: AI model selection
+  modelProvider?: string;
+  modelId?: string;
+  memo?: string;
 }
 
 // Session status types - aligned with Vercel Sandbox SDK status
@@ -52,6 +56,8 @@ export interface SandboxSession {
   status: SessionStatus;
   config: SandboxConfig;
   runtime: SandboxRuntime;
+  modelProvider?: string | null;
+  modelId?: string | null;
   prUrl?: string | null; // Pull Request URL
   prStatus?: PrStatus | null;
   memo?: string | null; // Optional memo/notes
@@ -62,6 +68,26 @@ export interface SandboxSession {
 
 export interface SandboxSessionWithLogs extends SandboxSession {
   logs: LogEntry[];
+}
+
+export interface EnvironmentPreset {
+  id: string;
+  userLogin: string;
+  name: string;
+  gistUrl: string;
+  snapshotId?: string | null;
+  workdir: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserSettings {
+  id: string;
+  userLogin: string;
+  opencodeAuthJsonB64?: string | null;
+  enableCodeReview: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Snapshot types
@@ -102,6 +128,14 @@ export interface SessionListResponse {
 export interface SnapshotListResponse {
   snapshots: SnapshotSummary[];
   total: number;
+}
+
+export interface EnvironmentPresetListResponse {
+  presets: EnvironmentPreset[];
+}
+
+export interface UserSettingsResponse {
+  settings: UserSettings | null;
 }
 
 export interface CreateSnapshotResponse {
@@ -155,7 +189,7 @@ export interface SandboxCreateOptions {
   runtime: SandboxRuntime;
   source: SandboxSource;
   timeout?: number;
-  env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
   command?: string;
   args?: string[];
   cwd?: string;
