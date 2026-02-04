@@ -194,11 +194,10 @@ pnpm run db:studio
  │   └── ui/               # shadcn/ui components
  ├── hooks/                # Custom React hooks
  ├── lib/
- │   ├── api/              # API utilities (validators, config builders)
- │   ├── db/               # Database schema & queries
- │   ├── sandbox/          # Sandbox manager & services
- │   ├── validators/       # Zod validation schemas
- │   └── storage.ts        # LocalStorage utilities
+│   ├── api/              # API utilities (validators, config builders)
+│   ├── db/               # Database schema & queries
+│   ├── sandbox/          # Sandbox manager & services
+│   └── storage.ts        # LocalStorage utilities
  ├── test/
  │   ├── helpers/          # Shared test utilities
  │   └── setup.ts          # Vitest global setup
@@ -256,7 +255,7 @@ pnpm run check
 pnpm run typecheck
 
 # Run tests
-pnpm vitest
+pnpm run test
 
 # Run tests with coverage
 pnpm test:coverage
