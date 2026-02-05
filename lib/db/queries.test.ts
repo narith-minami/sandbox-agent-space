@@ -171,6 +171,17 @@ describe('updateSession', () => {
     const mockSession = createMockSession({ status: 'completed' as SessionStatus });
 
     const { db } = await import('./client');
+    // Mock the select query for checking endedAt
+    vi.mocked(db.select).mockImplementation(
+      () =>
+        ({
+          from: () => ({
+            where: () => ({
+              limit: () => Promise.resolve([{ endedAt: null }]),
+            }),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
     vi.mocked(db.update).mockImplementation(
       () =>
         ({
@@ -214,6 +225,17 @@ describe('updateSession', () => {
 
   it('should return undefined when session not found', async () => {
     const { db } = await import('./client');
+    // Mock the select query for checking endedAt
+    vi.mocked(db.select).mockImplementation(
+      () =>
+        ({
+          from: () => ({
+            where: () => ({
+              limit: () => Promise.resolve([]),
+            }),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
     vi.mocked(db.update).mockImplementation(
       () =>
         ({
@@ -502,6 +524,17 @@ describe('getLogsBySessionId', () => {
 describe('setSessionStatus', () => {
   it('should call updateSession with status', async () => {
     const { db } = await import('./client');
+    // Mock the select query for checking endedAt
+    vi.mocked(db.select).mockImplementation(
+      () =>
+        ({
+          from: () => ({
+            where: () => ({
+              limit: () => Promise.resolve([{ endedAt: null }]),
+            }),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
     const updateMock = vi.fn().mockResolvedValue([]);
     vi.mocked(db.update).mockImplementation(
       () =>
