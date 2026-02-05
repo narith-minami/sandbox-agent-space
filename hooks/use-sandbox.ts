@@ -22,6 +22,13 @@ function devLog(...args: unknown[]) {
   }
 }
 
+/**
+ * Invalidate sidebar sessions query to refresh the session list
+ */
+function invalidateSidebarSessions(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['sidebar-sessions'] });
+}
+
 // Create sandbox mutation
 export function useSandboxCreate() {
   const queryClient = useQueryClient();
@@ -60,9 +67,11 @@ export function useSandboxCreate() {
 
 // Get session with logs
 export function useSession(sessionId: string | null) {
+  const queryClient = useQueryClient();
   const prevStatusRef = useRef<SessionStatus | null>(null);
   const notificationShownRef = useRef<boolean>(false);
   const isFirstFetchRef = useRef<boolean>(true);
+  const sidebarInvalidatedRef = useRef<boolean>(false);
 
   const query = useQuery({
     queryKey: ['session', sessionId],
@@ -129,6 +138,13 @@ export function useSession(sessionId: string | null) {
           .catch((error) => {
             console.error('[useSession] Failed to show notification:', error);
           });
+
+        // Invalidate sidebar sessions to update the status immediately
+        if (!sidebarInvalidatedRef.current) {
+          devLog('[useSession] Invalidating sidebar sessions');
+          invalidateSidebarSessions(queryClient);
+          sidebarInvalidatedRef.current = true;
+        }
       }
 
       // Update tracking refs
@@ -152,6 +168,7 @@ export function useSession(sessionId: string | null) {
     prevStatusRef.current = null;
     notificationShownRef.current = false;
     isFirstFetchRef.current = true;
+    sidebarInvalidatedRef.current = false;
   }, [sessionId]);
 
   return query;
