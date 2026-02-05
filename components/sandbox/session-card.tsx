@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useArchiveSession } from '@/hooks/use-archive-session';
+import { extractRepoName } from '@/lib/utils';
 import type { SandboxSession } from '@/types/sandbox';
 import { StatusBadge } from './status-badge';
 
@@ -45,8 +46,11 @@ export function SessionCard({ session }: SessionCardProps) {
     <Card className='hover:shadow-md transition-shadow'>
       <CardHeader className='pb-2'>
         <div className='flex items-center justify-between gap-2 min-w-0'>
-          <CardTitle className='text-lg font-medium truncate min-w-0'>
-            {session.config.repoSlug}
+          <CardTitle
+            className='text-lg font-medium truncate min-w-0'
+            title={session.config.repoSlug}
+          >
+            {extractRepoName(session.config.repoSlug)}
           </CardTitle>
           <StatusBadge status={session.status} />
         </div>
