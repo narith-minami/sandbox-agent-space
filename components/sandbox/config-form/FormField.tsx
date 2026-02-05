@@ -143,23 +143,22 @@ export function FormTextArea({
       name={name}
       render={({ field, fieldState }) => {
         // Handle transcript updates when listening stops
-        const TranscriptHandler = () => {
-          const prevTranscriptRef = useRef('');
+        // biome-ignore lint/correctness/useHookAtTopLevel: This is a render prop pattern
+        const prevTranscriptRef = useRef('');
 
-          useEffect(() => {
-            if (!isListening && transcript && transcript !== prevTranscriptRef.current) {
-              appendTranscript(
-                typeof field.value === 'string' ? field.value : '',
-                transcript,
-                field.onChange
-              );
-              prevTranscriptRef.current = transcript;
-              resetTranscript();
-            }
-          }, []);
-
-          return null;
-        };
+        // biome-ignore lint/correctness/useHookAtTopLevel: This is a render prop pattern
+        // biome-ignore lint/correctness/useExhaustiveDependencies: isListening and transcript are from outer hook
+        useEffect(() => {
+          if (!isListening && transcript && transcript !== prevTranscriptRef.current) {
+            appendTranscript(
+              typeof field.value === 'string' ? field.value : '',
+              transcript,
+              field.onChange
+            );
+            prevTranscriptRef.current = transcript;
+            resetTranscript();
+          }
+        }, [isListening, transcript, field.value, field.onChange]);
 
         return (
           <FormItem>
@@ -223,7 +222,6 @@ export function FormTextArea({
             {enableVoiceInput && error && <div className='text-sm text-destructive'>{error}</div>}
             {description && <FormDescription>{description}</FormDescription>}
             <FormMessage />
-            <TranscriptHandler />
           </FormItem>
         );
       }}
