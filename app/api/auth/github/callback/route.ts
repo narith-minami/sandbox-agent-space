@@ -28,7 +28,7 @@ interface GitHubUserResponse {
 
 export async function GET(request: Request): Promise<NextResponse> {
   if (!isGitHubAuthEnabled()) {
-    return NextResponse.json({ error: 'GitHub認証が無効です。' }, { status: 404 });
+    return NextResponse.json({ error: 'GitHub authentication is disabled.' }, { status: 404 });
   }
 
   const url = new URL(request.url);
@@ -36,7 +36,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const state = url.searchParams.get('state');
 
   if (!code || !state) {
-    return NextResponse.json({ error: 'GitHub認証コードが不足しています。' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing GitHub authorization code.' }, { status: 400 });
   }
 
   const sessionSecret = getGitHubSessionSecret();
@@ -60,7 +60,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const tokenData = (await tokenResponse.json()) as GitHubTokenResponse;
   if (!tokenData.access_token) {
     return NextResponse.json(
-      { error: tokenData.error_description || 'GitHubトークンの取得に失敗しました。' },
+      { error: tokenData.error_description || 'Failed to retrieve GitHub token.' },
       { status: 401 }
     );
   }
@@ -75,10 +75,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   });
 
   if (!userResponse.ok) {
-    return NextResponse.json(
-      { error: 'GitHubユーザー情報の取得に失敗しました。' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch GitHub user profile.' }, { status: 401 });
   }
 
   const userData = (await userResponse.json()) as GitHubUserResponse;

@@ -22,6 +22,8 @@ export function createMockSession(overrides: Partial<Session> = {}): Session {
     runtime: 'node24' as SandboxRuntime,
     status: 'pending' as SessionStatus,
     sandboxId: null,
+    modelProvider: 'anthropic',
+    modelId: 'claude-3-5-sonnet-20241022',
     prUrl: null,
     prStatus: null,
     memo: null,

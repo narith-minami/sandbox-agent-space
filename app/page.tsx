@@ -1,129 +1,162 @@
-import { ArrowRight, Code2, History, Zap } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+'use client';
+
+import { Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { ConfigForm, type SandboxConfigFormData } from '@/components/sandbox/config-form';
+import { EmptySessionState } from '@/components/sandbox/empty-session-state';
+import { SessionStatusCard } from '@/components/sandbox/session-status-card';
+import { Card, CardContent } from '@/components/ui/card';
+import { useCommonConfig } from '@/hooks/use-common-config';
+import { useEnvironmentPresets } from '@/hooks/use-environment-presets';
+import { useLogStream } from '@/hooks/use-log-stream';
+import { useNotifications } from '@/hooks/use-notifications';
+import { useSandboxCreate, useSession } from '@/hooks/use-sandbox';
+import { useSessionCloning } from '@/hooks/use-session-cloning';
+import { useUserSettings } from '@/hooks/use-user-settings';
+import { getLastUsedValues, saveLastUsedValues } from '@/lib/storage';
+import type { SandboxConfig, StreamLogEntry } from '@/types/sandbox';
+
+function HomePageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const cloneFromSessionId = searchParams.get('clone');
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const createSandbox = useSandboxCreate();
+  const { data: session, isLoading: isSessionLoading } = useSession(sessionId);
+  const { data: cloneSession, isLoading: isCloneLoading } = useSession(cloneFromSessionId);
+  const { data: commonConfig, isLoading: isCommonConfigLoading } = useCommonConfig();
+  const { data: presetsData } = useEnvironmentPresets();
+  const { data: userSettingsData, isLoading: isUserSettingsLoading } = useUserSettings();
+  const { logs, isConnected, isComplete, error: streamError } = useLogStream(sessionId);
+  const { permission, isSupported, requestPermission } = useNotifications();
+
+  const defaultValues = useSessionCloning(cloneSession, isCloneLoading);
+  const lastUsed = useMemo(() => getLastUsedValues(), []);
+  const defaultPresetId = cloneFromSessionId ? undefined : lastUsed.presetId || null;
+
+  const handleSubmit = async (data: SandboxConfigFormData) => {
+    try {
+      saveLastUsedValues({
+        repoUrl: data.repoUrl,
+        repoSlug: data.repoSlug,
+        baseBranch: data.baseBranch,
+        frontDir: data.frontDir,
+        planFile: data.planSource === 'file' ? data.planFile : '',
+        modelId: data.modelId,
+        modelProvider: data.modelProvider,
+      });
+
+      const config: SandboxConfig = {
+        planSource: data.planSource,
+        planFile: data.planFile,
+        planText: data.planText,
+        gistUrl: data.gistUrl,
+        repoUrl: data.repoUrl,
+        repoSlug: data.repoSlug,
+        baseBranch: data.baseBranch,
+        frontDir: data.frontDir,
+        opencodeAuthJsonB64: data.opencodeAuthJsonB64,
+        runtime: data.runtime,
+        snapshotId: data.snapshotId,
+        enableCodeReview: data.enableCodeReview,
+        modelProvider: data.modelProvider,
+        modelId: data.modelId,
+        memo: data.memo,
+      };
+
+      const result = await createSandbox.mutateAsync(config);
+      setSessionId(result.sessionId);
+
+      if (cloneFromSessionId) {
+        router.replace('/');
+      }
+
+      toast.success('Sandbox started successfully!', {
+        description: `Session ID: ${result.sessionId}`,
+      });
+
+      if (isSupported && permission === 'default') {
+        try {
+          await requestPermission();
+        } catch (error) {
+          console.error('Failed to request notification permission:', error);
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to start sandbox', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  return (
+    <div className='relative'>
+      <div
+        className='pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(120,113,108,0.18),transparent_55%)]'
+        aria-hidden
+      />
+      <div className='space-y-6'>
+        <div>
+          {isCloneLoading || isCommonConfigLoading || isUserSettingsLoading ? (
+            <Card>
+              <CardContent className='flex items-center justify-center h-[600px]'>
+                <div className='text-center space-y-4'>
+                  <Loader2 className='h-8 w-8 animate-spin mx-auto' />
+                  <p className='text-muted-foreground'>Loading configuration...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ConfigForm
+              onSubmit={handleSubmit}
+              isLoading={createSandbox.isPending}
+              defaultValues={defaultValues}
+              commonConfig={commonConfig}
+              userSettings={userSettingsData?.settings || null}
+              presets={presetsData?.presets || []}
+              defaultPresetId={defaultPresetId}
+            />
+          )}
+        </div>
+
+        <div className='space-y-6'>
+          {sessionId ? (
+            <SessionStatusCard
+              sessionId={sessionId}
+              session={session}
+              isLoading={isSessionLoading}
+              logs={logs as unknown as StreamLogEntry[]}
+              isConnected={isConnected}
+              isComplete={isComplete}
+              streamError={streamError}
+            />
+          ) : (
+            <EmptySessionState isCloning={!!cloneFromSessionId} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
-    <div className='space-y-8'>
-      {/* Hero Section */}
-      <section className='text-center space-y-4 py-12'>
-        <h1 className='text-4xl font-bold tracking-tight'>Coding Agent Sandbox</h1>
-        <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
-          ブラウザからVercel
-          Sandboxを実行し、GitHubリポジトリに対してコーディングエージェントを動かすWebアプリケーション
-        </p>
-        <div className='flex justify-center gap-4 pt-4'>
-          <Link href='/sandbox'>
-            <Button size='lg'>
-              <Zap className='mr-2 h-5 w-5' />
-              Start Sandbox
-            </Button>
-          </Link>
-          <Link href='/history'>
-            <Button size='lg' variant='outline'>
-              <History className='mr-2 h-5 w-5' />
-              View History
-            </Button>
-          </Link>
+    <Suspense
+      fallback={
+        <div className='space-y-6'>
+          <Card>
+            <CardContent className='flex items-center justify-center h-[600px]'>
+              <Loader2 className='h-8 w-8 animate-spin' />
+            </CardContent>
+          </Card>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className='grid md:grid-cols-3 gap-6 py-8'>
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <Code2 className='h-5 w-5' />
-              GitHub Integration
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              GitHubリポジトリと連携し、コーディングエージェントが自動的にコードを生成・修正します。
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <Zap className='h-5 w-5' />
-              Real-time Logs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              Server-Sent Eventsを使用して、リアルタイムでログをストリーミング表示します。
-            </CardDescription>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2'>
-              <History className='h-5 w-5' />
-              Session History
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CardDescription>
-              過去の実行履歴を保存し、いつでも確認・再実行が可能です。
-            </CardDescription>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Getting Started */}
-      <section className='py-8'>
-        <Card>
-          <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
-            <CardDescription>以下の手順でコーディングエージェントを実行できます</CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='flex items-start gap-4'>
-              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold'>
-                1
-              </div>
-              <div>
-                <h3 className='font-medium'>設定を準備</h3>
-                <p className='text-sm text-muted-foreground'>
-                  Gist URL、GitHubリポジトリ、認証トークンを準備します
-                </p>
-              </div>
-            </div>
-            <div className='flex items-start gap-4'>
-              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold'>
-                2
-              </div>
-              <div>
-                <h3 className='font-medium'>Sandboxを起動</h3>
-                <p className='text-sm text-muted-foreground'>設定を入力してSandboxを起動します</p>
-              </div>
-            </div>
-            <div className='flex items-start gap-4'>
-              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold'>
-                3
-              </div>
-              <div>
-                <h3 className='font-medium'>リアルタイムで監視</h3>
-                <p className='text-sm text-muted-foreground'>
-                  ログをリアルタイムで確認し、完了を待ちます
-                </p>
-              </div>
-            </div>
-            <div className='pt-4'>
-              <Link href='/sandbox'>
-                <Button>
-                  今すぐ始める
-                  <ArrowRight className='ml-2 h-4 w-4' />
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
+      }
+    >
+      <HomePageContent />
+    </Suspense>
   );
 }

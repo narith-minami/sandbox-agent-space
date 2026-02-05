@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         {
           error: 'Authentication required',
           code: 'AUTH_REQUIRED',
-          details: { loginUrl: `/login?next=${encodeURIComponent('/sandbox')}` },
+          details: { loginUrl: `/login?next=${encodeURIComponent('/')}` },
         },
         { status: 401 }
       );

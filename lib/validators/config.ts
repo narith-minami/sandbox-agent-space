@@ -114,6 +114,10 @@ export const SandboxConfigSchema = z
     // New: runtime selection (optional, defaults to node24)
     runtime: SandboxRuntimeSchema.optional().default('node24'),
 
+    // New: AI model selection (optional, defaults to Claude 3.5 Sonnet)
+    modelProvider: z.string().default('anthropic'),
+    modelId: z.string().default('claude-3-5-sonnet-20241022'),
+
     // New: optional snapshot ID to create from
     snapshotId: z.string().optional(),
 
@@ -196,3 +200,44 @@ export const SnapshotIdSchema = z.string().min(1, 'Snapshot ID is required');
 export function validateSnapshotId(id: string): string {
   return SnapshotIdSchema.parse(id);
 }
+
+// Environment preset schema
+export const EnvironmentPresetSchema = z.object({
+  name: z.string().min(1, 'Preset name is required'),
+  gistUrl: z
+    .string()
+    .refine((val) => !val || isValidUrl(val), 'Invalid URL format')
+    .refine((val) => !val || isGistUrl(val), 'Must be a valid GitHub Gist URL')
+    .optional()
+    .default(''),
+  snapshotId: z.string().optional().default(''),
+  workdir: z
+    .string()
+    .refine((val) => !val || !val.includes('..'), 'Path traversal is not allowed')
+    .refine((val) => !val || !val.startsWith('/'), 'Absolute paths are not allowed')
+    .optional()
+    .default(''),
+});
+
+export type EnvironmentPresetParams = z.infer<typeof EnvironmentPresetSchema>;
+
+// User settings schema
+export const UserSettingsSchema = z.object({
+  opencodeAuthJsonB64: z
+    .string()
+    .refine((val) => {
+      if (!val) return true;
+      try {
+        const decoded = atob(val);
+        JSON.parse(decoded);
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'Invalid base64-encoded JSON')
+    .optional()
+    .default(''),
+  enableCodeReview: z.boolean().default(false),
+});
+
+export type UserSettingsParams = z.infer<typeof UserSettingsSchema>;

@@ -12,7 +12,7 @@ import { LogStreamService } from './log-stream-service';
 import { SandboxFileService } from './sandbox-file-service';
 
 export interface SandboxCreateOptions {
-  env: Record<string, string>;
+  env: Record<string, string | undefined>;
   command: string;
   runtime?: SandboxRuntime;
   snapshotId?: string;
@@ -22,6 +22,17 @@ export interface SandboxCreateOptions {
 
 // Store active sandbox references for log streaming and management
 const activeSandboxes = new Map<string, { sandbox: Sandbox; command?: Command }>();
+
+// Helper function to filter out undefined values from environment
+function filterEnv(env: Record<string, string | undefined>): Record<string, string> {
+  const filtered: Record<string, string> = {};
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== undefined) {
+      filtered[key] = value;
+    }
+  }
+  return filtered;
+}
 
 /**
  * SandboxLifecycleManager - Manages sandbox lifecycle operations
@@ -213,7 +224,7 @@ export class SandboxLifecycleManager {
       const command = await sandbox.runCommand({
         cmd: 'bash',
         args: ['-c', options.command],
-        env: options.env,
+        env: filterEnv(options.env),
         cwd: options.env.FRONT_DIR ? `/vercel/sandbox/${options.env.FRONT_DIR}` : '/vercel/sandbox',
         detached: true,
       });

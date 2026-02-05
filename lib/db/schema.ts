@@ -9,6 +9,8 @@ export const sessions = pgTable('sessions', {
   status: text('status').$type<SessionStatus>().notNull().default('pending'),
   config: jsonb('config').$type<SandboxConfig>().notNull(),
   runtime: text('runtime').$type<SandboxRuntime>().notNull().default('node24'),
+  modelProvider: text('model_provider').default('anthropic'),
+  modelId: text('model_id').default('claude-3-5-sonnet-20241022'),
   prUrl: text('pr_url'), // Pull Request URL
   prStatus: text('pr_status').$type<PrStatus>(), // Pull Request status
   memo: text('memo'), // Optional memo/notes
@@ -40,6 +42,28 @@ export const snapshots = pgTable('snapshots', {
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 });
 
+// Environment presets table - user-defined environment options
+export const environmentPresets = pgTable('environment_presets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userLogin: text('user_login').notNull(),
+  name: text('name').notNull(),
+  gistUrl: text('gist_url').notNull(),
+  snapshotId: text('snapshot_id'),
+  workdir: text('workdir').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// User settings table - per-user defaults
+export const userSettings = pgTable('user_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userLogin: text('user_login').notNull(),
+  opencodeAuthJsonB64: text('opencode_auth_json_b64'),
+  enableCodeReview: boolean('enable_code_review').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Infer types from schema
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
@@ -47,3 +71,7 @@ export type Log = typeof logs.$inferSelect;
 export type NewLog = typeof logs.$inferInsert;
 export type SnapshotRecord = typeof snapshots.$inferSelect;
 export type NewSnapshotRecord = typeof snapshots.$inferInsert;
+export type EnvironmentPreset = typeof environmentPresets.$inferSelect;
+export type NewEnvironmentPreset = typeof environmentPresets.$inferInsert;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type NewUserSettings = typeof userSettings.$inferInsert;

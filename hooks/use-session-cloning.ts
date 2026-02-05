@@ -28,8 +28,8 @@ export function useSessionCloning(
       hasInitialized.current = true;
       const config = cloneSession.config;
       setDefaultValues({
-        planSource: config.planSource || 'file',
-        planFile: config.planFile || '',
+        planSource: 'text',
+        planFile: '',
         planText: config.planText || '',
         gistUrl: config.gistUrl,
         repoUrl: config.repoUrl,
@@ -37,10 +37,11 @@ export function useSessionCloning(
         baseBranch: config.baseBranch || 'main',
         frontDir: config.frontDir,
         memo: cloneSession.memo || '',
-        opencodeAuthJsonB64: '', // Don't clone sensitive data
         runtime: config.runtime || 'node24',
         snapshotId: config.snapshotId || '',
         enableCodeReview: config.enableCodeReview ?? false,
+        modelProvider: config.modelProvider || 'anthropic',
+        modelId: config.modelId || 'claude-3-5-sonnet-20241022',
       });
 
       toast.info('Configuration loaded from previous session', {
@@ -54,18 +55,18 @@ export function useSessionCloning(
       hasInitialized.current = true;
       const lastUsed = getLastUsedValues();
       setDefaultValues({
-        planSource: 'file',
-        planFile: lastUsed.planFile || '',
+        planSource: 'text',
+        planFile: '',
         planText: '',
         repoUrl: lastUsed.repoUrl || '',
         repoSlug: lastUsed.repoSlug || '',
         baseBranch: lastUsed.baseBranch,
         frontDir: lastUsed.frontDir,
-        opencodeAuthJsonB64: '',
         gistUrl: '',
         runtime: 'node24',
         snapshotId: '',
-        enableCodeReview: true,
+        modelProvider: lastUsed.modelProvider || 'anthropic',
+        modelId: lastUsed.modelId || 'claude-3-5-sonnet-20241022',
       });
     }
   }, [cloneSession, isCloneLoading]);

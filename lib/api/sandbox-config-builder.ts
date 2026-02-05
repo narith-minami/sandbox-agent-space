@@ -3,7 +3,7 @@ import type { SandboxRuntime } from '@/lib/sandbox/auth';
 import type { ValidatedSandboxConfig } from '@/lib/validators/config';
 import type { ApiError } from '@/types/sandbox';
 
-export interface SandboxEnvironment extends Record<string, string> {
+export interface SandboxEnvironment {
   GITHUB_TOKEN: string;
   OPENCODE_AUTH_JSON_B64: string;
   GIST_URL: string;
@@ -13,6 +13,13 @@ export interface SandboxEnvironment extends Record<string, string> {
   FRONT_DIR: string;
   PLAN_FILE: string;
   ENABLE_CODE_REVIEW: string;
+  OPENCODE_MODEL_PROVIDER: string;
+  OPENCODE_MODEL_ID: string;
+  /** Required by the Gist run-opencode-with-snapshot.sh for snapshot starts. */
+  SNAPSHOT_ID?: string;
+  /** Required by the Gist run.sh. Plan text when planSource=text. */
+  PLAN_TEXT?: string;
+  [key: string]: string | undefined;
 }
 
 export interface SandboxCommandConfig {
@@ -165,7 +172,11 @@ export class SandboxConfigBuilder {
     gistUrl: string,
     planFilePath: string
   ): SandboxEnvironment {
-    return {
+    // Get model configuration with fallbacks
+    const modelProvider = config.modelProvider || process.env.COMMON_MODEL_PROVIDER || 'anthropic';
+    const modelId = config.modelId || process.env.COMMON_MODEL_ID || 'claude-3-5-sonnet-20241022';
+
+    const env: SandboxEnvironment = {
       GITHUB_TOKEN: githubToken,
       OPENCODE_AUTH_JSON_B64: opencodeAuthJsonB64,
       GIST_URL: gistUrl,
@@ -175,7 +186,16 @@ export class SandboxConfigBuilder {
       FRONT_DIR: config.frontDir,
       PLAN_FILE: planFilePath,
       ENABLE_CODE_REVIEW: config.enableCodeReview ? '1' : '0',
+      OPENCODE_MODEL_PROVIDER: modelProvider,
+      OPENCODE_MODEL_ID: modelId,
     };
+    if (config.snapshotId) {
+      env.SNAPSHOT_ID = config.snapshotId;
+    }
+    if (config.planSource === 'text' && config.planText) {
+      env.PLAN_TEXT = config.planText;
+    }
+    return env;
   }
 
   /**

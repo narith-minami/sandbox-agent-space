@@ -43,7 +43,7 @@ export default function RootLayout({
                 <div className='flex items-center gap-4'>
                   <nav className='flex items-center space-x-6 text-sm font-medium'>
                     <Link
-                      href='/sandbox'
+                      href='/'
                       className='transition-colors hover:text-foreground/80 text-foreground/60'
                     >
                       Sandbox
@@ -53,6 +53,12 @@ export default function RootLayout({
                       className='transition-colors hover:text-foreground/80 text-foreground/60'
                     >
                       History
+                    </Link>
+                    <Link
+                      href='/settings'
+                      className='transition-colors hover:text-foreground/80 text-foreground/60'
+                    >
+                      Settings
                     </Link>
                   </nav>
                   <AuthStatus />

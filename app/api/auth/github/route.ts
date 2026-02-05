@@ -9,7 +9,7 @@ import {
 
 export async function GET(request: Request): Promise<NextResponse> {
   if (!isGitHubAuthEnabled()) {
-    return NextResponse.json({ error: 'GitHub認証が無効です。' }, { status: 404 });
+    return NextResponse.json({ error: 'GitHub authentication is disabled.' }, { status: 404 });
   }
 
   const url = new URL(request.url);
