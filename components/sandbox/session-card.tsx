@@ -65,9 +65,7 @@ export function SessionCard({ session }: SessionCardProps) {
                   <Clock className='h-3 w-3' />
                   {formattedDate}
                 </span>
-                <span className='flex items-center gap-1 font-semibold'>
-                  {duration}
-                </span>
+                <span className='flex items-center gap-1 font-semibold'>{duration}</span>
                 {session.config.frontDir && (
                   <span className='flex items-center gap-1 truncate'>
                     <GitBranch className='h-3 w-3' />

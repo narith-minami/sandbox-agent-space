@@ -5,8 +5,8 @@ import { LogViewer } from '@/components/sandbox/log-viewer';
 import { StatusBadge } from '@/components/sandbox/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { calculateSessionDuration } from '@/lib/utils';
 import type { StreamLogEntry } from '@/hooks/use-log-stream';
+import { calculateSessionDuration } from '@/lib/utils';
 import type { SandboxSessionWithLogs } from '@/types/sandbox';
 
 interface SessionStatusCardProps {
