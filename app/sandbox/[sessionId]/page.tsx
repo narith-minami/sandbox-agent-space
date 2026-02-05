@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from '@/hooks/use-sandbox';
+import { extractRepoName } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ sessionId: string }>;
@@ -108,7 +109,9 @@ export default function SessionDetailPage({ params }: PageProps) {
             </Button>
           </Link>
           <div>
-            <h1 className='text-2xl font-bold tracking-tight'>{session.config.repoSlug}</h1>
+            <h1 className='text-2xl font-bold tracking-tight' title={session.config.repoSlug}>
+              {extractRepoName(session.config.repoSlug)}
+            </h1>
             <p className='text-sm text-muted-foreground font-mono'>{sessionId}</p>
           </div>
         </div>

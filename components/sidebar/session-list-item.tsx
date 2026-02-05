@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, extractRepoName } from '@/lib/utils';
 import type { SandboxSession, SessionStatus } from '@/types/sandbox';
 import { PrStatusBadge } from './pr-status-badge';
 
@@ -89,8 +89,10 @@ function resolveRepoSlug(session: SandboxSession): string {
 }
 
 function truncateRepoSlug(slug: string, maxLength = 25): string {
-  if (slug.length <= maxLength) return slug;
-  return `${slug.slice(0, maxLength)}...`;
+  // Display only the repo name (without org prefix)
+  const repoName = extractRepoName(slug);
+  if (repoName.length <= maxLength) return repoName;
+  return `${repoName.slice(0, maxLength)}...`;
 }
 
 function extractPrNumber(prUrl: string | null | undefined): string | null {
