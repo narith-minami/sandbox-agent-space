@@ -15,25 +15,27 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <div className='mx-auto flex w-full max-w-lg flex-col gap-6 rounded-lg border bg-card p-8 text-card-foreground shadow-sm'>
       <div className='space-y-2'>
-        <h1 className='text-2xl font-semibold'>GitHub認証</h1>
+        <h1 className='text-2xl font-semibold'>GitHub authentication</h1>
         <p className='text-sm text-muted-foreground'>
-          {isEnabled ? '続行するにはGitHubでログインしてください。' : '現在GitHub認証は無効です。'}
+          {isEnabled
+            ? 'Sign in with GitHub to continue.'
+            : 'GitHub authentication is currently disabled.'}
         </p>
       </div>
       <div className='flex flex-col gap-3'>
         {isEnabled ? (
           <Button asChild className='w-full'>
             <Link href={`/api/auth/github?next=${encodeURIComponent(nextPath)}`}>
-              GitHubでログイン
+              Sign in with GitHub
             </Link>
           </Button>
         ) : (
           <Button className='w-full' disabled>
-            GitHub認証が無効です
+            GitHub authentication is disabled
           </Button>
         )}
         <Button asChild variant='outline' className='w-full'>
-          <Link href='/'>トップへ戻る</Link>
+          <Link href='/'>Back to home</Link>
         </Button>
       </div>
     </div>

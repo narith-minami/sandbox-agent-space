@@ -15,9 +15,9 @@ export interface SandboxEnvironment {
   ENABLE_CODE_REVIEW: string;
   OPENCODE_MODEL_PROVIDER: string;
   OPENCODE_MODEL_ID: string;
-  /** Gist の run-opencode-with-snapshot.sh が要求。スナップショット起動時に必須 */
+  /** Required by the Gist run-opencode-with-snapshot.sh for snapshot starts. */
   SNAPSHOT_ID?: string;
-  /** Gist の run.sh が要求。planSource=text のときのプラン本文 */
+  /** Required by the Gist run.sh. Plan text when planSource=text. */
   PLAN_TEXT?: string;
   [key: string]: string | undefined;
 }
@@ -173,10 +173,8 @@ export class SandboxConfigBuilder {
     planFilePath: string
   ): SandboxEnvironment {
     // Get model configuration with fallbacks
-    const modelProvider =
-      config.modelProvider || process.env.COMMON_MODEL_PROVIDER || 'anthropic';
-    const modelId =
-      config.modelId || process.env.COMMON_MODEL_ID || 'claude-3-5-sonnet-20241022';
+    const modelProvider = config.modelProvider || process.env.COMMON_MODEL_PROVIDER || 'anthropic';
+    const modelId = config.modelId || process.env.COMMON_MODEL_ID || 'claude-3-5-sonnet-20241022';
 
     const env: SandboxEnvironment = {
       GITHUB_TOKEN: githubToken,

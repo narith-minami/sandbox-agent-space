@@ -2,7 +2,7 @@
 
 import { Loader2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ConfigForm, type SandboxConfigFormData } from '@/components/sandbox/config-form';
 import { EmptySessionState } from '@/components/sandbox/empty-session-state';
@@ -15,7 +15,7 @@ import { useNotifications } from '@/hooks/use-notifications';
 import { useSandboxCreate, useSession } from '@/hooks/use-sandbox';
 import { useSessionCloning } from '@/hooks/use-session-cloning';
 import { useUserSettings } from '@/hooks/use-user-settings';
-import { saveLastUsedValues } from '@/lib/storage';
+import { getLastUsedValues, saveLastUsedValues } from '@/lib/storage';
 import type { SandboxConfig, StreamLogEntry } from '@/types/sandbox';
 
 function HomePageContent() {
@@ -35,6 +35,8 @@ function HomePageContent() {
   const { permission, isSupported, requestPermission } = useNotifications();
 
   const defaultValues = useSessionCloning(cloneSession, isCloneLoading);
+  const lastUsed = useMemo(() => getLastUsedValues(), []);
+  const defaultPresetId = cloneFromSessionId ? undefined : lastUsed.presetId || null;
 
   const handleSubmit = async (data: SandboxConfigFormData) => {
     try {
@@ -44,6 +46,8 @@ function HomePageContent() {
         baseBranch: data.baseBranch,
         frontDir: data.frontDir,
         planFile: data.planSource === 'file' ? data.planFile : '',
+        modelId: data.modelId,
+        modelProvider: data.modelProvider,
       });
 
       const config: SandboxConfig = {
@@ -114,6 +118,7 @@ function HomePageContent() {
               commonConfig={commonConfig}
               userSettings={userSettingsData?.settings || null}
               presets={presetsData?.presets || []}
+              defaultPresetId={defaultPresetId}
             />
           )}
         </div>

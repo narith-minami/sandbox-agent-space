@@ -26,7 +26,7 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
         name='planSource'
         render={({ field }) => (
           <FormItem>
-            <FormLabel className='text-base font-semibold'>タスク入力</FormLabel>
+            <FormLabel className='text-base font-semibold'>Task input</FormLabel>
             <FormControl>
               <Tabs
                 value={field.value}
@@ -34,8 +34,8 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                 className='w-full'
               >
                 <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value='file'>リポジトリ内ファイル</TabsTrigger>
-                  <TabsTrigger value='text'>テキスト入力</TabsTrigger>
+                  <TabsTrigger value='file'>Repository file</TabsTrigger>
+                  <TabsTrigger value='text'>Text input</TabsTrigger>
                 </TabsList>
                 <TabsContent value='file' className='mt-4'>
                   <FormField
@@ -53,7 +53,7 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                             value={typeof planField.value === 'boolean' ? '' : planField.value}
                           />
                         </FormControl>
-                        <FormDescription>リポジトリ内のプランファイルパス</FormDescription>
+                        <FormDescription>Plan file path in repository</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -70,16 +70,14 @@ export function PlanSourceSection({ control }: PlanSourceSectionProps) {
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder='やりたいこと、タスクの詳細、期待するアウトプットを記載...'
+                            placeholder='Describe what you want done, task details, expected output...'
                             rows={12}
                             className='font-mono text-sm min-h-[240px]'
                             {...textField}
                             value={typeof textField.value === 'boolean' ? '' : textField.value}
                           />
                         </FormControl>
-                        <FormDescription>
-                          入力内容はサンドボックス内でMarkdownとして保存されます
-                        </FormDescription>
+                        <FormDescription>Saved as Markdown inside the sandbox</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

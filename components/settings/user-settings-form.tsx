@@ -52,9 +52,9 @@ export function UserSettingsForm() {
         opencodeAuthJsonB64: values.opencodeAuthJsonB64 || '',
         enableCodeReview: values.enableCodeReview,
       });
-      toast.success('設定を保存しました');
+      toast.success('Settings saved');
     } catch (error) {
-      toast.error('設定の保存に失敗しました', {
+      toast.error('Failed to save settings', {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -73,7 +73,7 @@ export function UserSettingsForm() {
                 <Textarea className='font-mono text-sm' placeholder='eyJ...' rows={4} {...field} />
               </FormControl>
               <FormDescription>
-                認証用のBase64 JSONを入力します（環境変数がある場合は空でOK）
+                Enter Base64 JSON for authentication (leave empty if env var is set)
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -89,9 +89,9 @@ export function UserSettingsForm() {
                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
               </FormControl>
               <div className='space-y-1 leading-none'>
-                <FormLabel>Code Review を有効化</FormLabel>
+                <FormLabel>Enable code review</FormLabel>
                 <FormDescription>
-                  実行後にコードレビューを追加実行します（デフォルト: OFF）
+                  Run an additional code review after execution (default: off)
                 </FormDescription>
               </div>
             </FormItem>
@@ -99,7 +99,7 @@ export function UserSettingsForm() {
         />
 
         <Button type='submit' disabled={isLoading || updateSettings.isPending}>
-          {updateSettings.isPending ? '保存中...' : '設定を保存'}
+          {updateSettings.isPending ? 'Saving...' : 'Save settings'}
         </Button>
       </form>
     </Form>

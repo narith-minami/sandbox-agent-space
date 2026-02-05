@@ -24,7 +24,7 @@ export async function AuthStatus() {
   if (!session) {
     return (
       <Button asChild size='sm'>
-        <Link href='/login'>ログイン</Link>
+        <Link href='/login'>Sign in</Link>
       </Button>
     );
   }
@@ -36,7 +36,7 @@ export async function AuthStatus() {
       </div>
       <form action='/api/auth/github/logout' method='post'>
         <Button size='sm' variant='outline' type='submit'>
-          ログアウト
+          Sign out
         </Button>
       </form>
     </div>

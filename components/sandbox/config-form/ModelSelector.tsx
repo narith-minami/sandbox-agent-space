@@ -28,7 +28,7 @@ export function ModelSelector({ control, variant = 'cards' }: ModelSelectorProps
             {variant === 'select' ? (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder='モデルを選択' />
+                  <SelectValue placeholder='Select model' />
                 </SelectTrigger>
                 <SelectContent>
                   {ANTHROPIC_MODELS.map((model) => (

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { getModelProvider } from '@/lib/constants/models';
+import { saveLastUsedValues } from '@/lib/storage';
 import type { EnvironmentPreset, UserSettings } from '@/types/sandbox';
 import { EnvironmentPresetSelector } from './config-form/EnvironmentPresetSelector';
 import { FormTextArea } from './config-form/FormField';
@@ -58,6 +59,7 @@ interface ConfigFormProps {
   onSubmit: (data: SandboxConfigFormData) => void;
   isLoading?: boolean;
   defaultValues?: Partial<SandboxConfigFormData>;
+  defaultPresetId?: string | null;
   commonConfig?: {
     opencodeAuthJsonB64?: string;
     gistUrl?: string;
@@ -70,11 +72,12 @@ export function ConfigForm({
   onSubmit,
   isLoading = false,
   defaultValues,
+  defaultPresetId,
   commonConfig,
   userSettings,
   presets = [],
 }: ConfigFormProps) {
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(defaultPresetId || null);
 
   const form = useForm<SandboxConfigFormData>({
     resolver: zodResolver(formSchema),
@@ -118,18 +121,37 @@ export function ConfigForm({
   }, [modelId, form]);
 
   useEffect(() => {
+    if (form.getValues('planSource') !== 'text') {
+      form.setValue('planSource', 'text');
+    }
+    if (form.getValues('planFile')) {
+      form.setValue('planFile', '');
+    }
+  }, [form]);
+
+  useEffect(() => {
     if (!selectedPreset) return;
     form.setValue('gistUrl', selectedPreset.gistUrl || '');
     form.setValue('snapshotId', selectedPreset.snapshotId || '');
     form.setValue('frontDir', selectedPreset.workdir || '');
   }, [form, selectedPreset]);
 
+  useEffect(() => {
+    if (defaultPresetId === undefined) return;
+    setSelectedPresetId(defaultPresetId || null);
+  }, [defaultPresetId]);
+
+  useEffect(() => {
+    if (defaultPresetId === undefined && selectedPresetId === null) return;
+    saveLastUsedValues({ presetId: selectedPresetId });
+  }, [defaultPresetId, selectedPresetId]);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className='flex items-center gap-2'>
           <Sparkles className='h-5 w-5 text-primary' />
-          サンドボックス作成
+          Create Sandbox
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -156,9 +178,9 @@ export function ConfigForm({
             <FormTextArea
               control={form.control}
               name='planText'
-              label='タスク'
-              placeholder='やりたいこと、タスクの詳細、期待するアウトプットを記載...'
-              description='入力内容はサンドボックス内でMarkdownとして保存されます'
+              label='Task'
+              placeholder='Describe what you want done, task details, expected output...'
+              description='Saved as Markdown inside the sandbox'
               rows={18}
               className='min-h-[320px]'
             />

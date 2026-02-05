@@ -10,7 +10,7 @@ import { deleteGitHubSession } from '@/lib/auth/github-session-store';
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (!isGitHubAuthEnabled()) {
-    return NextResponse.json({ error: 'GitHub認証が無効です。' }, { status: 404 });
+    return NextResponse.json({ error: 'GitHub authentication is disabled.' }, { status: 404 });
   }
 
   const cookieStore = await cookies();

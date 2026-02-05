@@ -25,7 +25,7 @@ import {
 } from '@/hooks/use-environment-presets';
 
 const formSchema = z.object({
-  name: z.string().min(1, '必須です'),
+  name: z.string().min(1, 'Required'),
   gistUrl: z.string(),
   snapshotId: z.string(),
   workdir: z.string(),
@@ -84,7 +84,7 @@ export function PresetManager() {
           snapshotId: values.snapshotId || '',
           workdir: values.workdir || '',
         });
-        toast.success('プリセットを更新しました');
+        toast.success('Preset updated');
       } else {
         await createPreset.mutateAsync({
           name: values.name,
@@ -92,11 +92,11 @@ export function PresetManager() {
           snapshotId: values.snapshotId || '',
           workdir: values.workdir || '',
         });
-        toast.success('プリセットを作成しました');
+        toast.success('Preset created');
       }
       handleCancel();
     } catch (error) {
-      toast.error('プリセットの保存に失敗しました', {
+      toast.error('Failed to save preset', {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -105,9 +105,9 @@ export function PresetManager() {
   const handleDelete = async (presetId: string) => {
     try {
       await deletePreset.mutateAsync(presetId);
-      toast.success('プリセットを削除しました');
+      toast.success('Preset deleted');
     } catch (error) {
-      toast.error('プリセットの削除に失敗しました', {
+      toast.error('Failed to delete preset', {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -123,9 +123,9 @@ export function PresetManager() {
               name='name'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>プリセット名</FormLabel>
+                  <FormLabel>Preset name</FormLabel>
                   <FormControl>
-                    <Input placeholder='例: staging' {...field} />
+                    <Input placeholder='e.g. staging' {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,12 +173,12 @@ export function PresetManager() {
           </div>
           <div className='flex flex-wrap gap-2'>
             <Button type='submit' disabled={createPreset.isPending || updatePreset.isPending}>
-              {editingId ? '更新' : '作成'}
+              {editingId ? 'Update' : 'Create'}
             </Button>
             {editingId ? (
               <Button type='button' variant='ghost' onClick={handleCancel}>
                 <X className='mr-1 h-4 w-4' />
-                キャンセル
+                Cancel
               </Button>
             ) : null}
           </div>
@@ -187,9 +187,9 @@ export function PresetManager() {
 
       <div className='grid gap-3'>
         {isLoading ? (
-          <div className='text-sm text-muted-foreground'>読み込み中...</div>
+          <div className='text-sm text-muted-foreground'>Loading...</div>
         ) : presets.length === 0 ? (
-          <div className='text-sm text-muted-foreground'>プリセットはまだありません</div>
+          <div className='text-sm text-muted-foreground'>No presets yet</div>
         ) : (
           presets.map((preset) => (
             <Card key={preset.id}>
@@ -197,8 +197,8 @@ export function PresetManager() {
                 <div>
                   <div className='font-medium'>{preset.name}</div>
                   <div className='text-xs text-muted-foreground mt-1'>
-                    Gist: {preset.gistUrl || '未設定'} / Snapshot: {preset.snapshotId || '未設定'} /
-                    Workdir: {preset.workdir || 'ルート'}
+                    Gist: {preset.gistUrl || 'Not set'} / Snapshot: {preset.snapshotId || 'Not set'}{' '}
+                    / Workdir: {preset.workdir || 'root'}
                   </div>
                 </div>
                 <div className='flex gap-2'>
@@ -209,7 +209,7 @@ export function PresetManager() {
                     onClick={() => handleEdit(preset.id)}
                   >
                     <Pencil className='mr-1 h-4 w-4' />
-                    編集
+                    Edit
                   </Button>
                   <Button
                     type='button'
@@ -220,7 +220,7 @@ export function PresetManager() {
                     disabled={deletePreset.isPending}
                   >
                     <Trash2 className='mr-1 h-4 w-4' />
-                    削除
+                    Delete
                   </Button>
                 </div>
               </CardContent>

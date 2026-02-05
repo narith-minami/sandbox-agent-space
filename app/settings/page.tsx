@@ -10,7 +10,7 @@ export default function SettingsPage() {
     <div className='space-y-6'>
       <div>
         <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
-        <p className='text-muted-foreground'>サブオプションと環境プリセットを管理します</p>
+        <p className='text-muted-foreground'>Manage sub-options and environment presets</p>
       </div>
 
       <div className='grid gap-6 lg:grid-cols-2'>
@@ -18,9 +18,9 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
               <Settings className='h-5 w-5 text-primary' />
-              サブオプション
+              Sub-options
             </CardTitle>
-            <CardDescription>Code review と OpenCode 認証を管理します</CardDescription>
+            <CardDescription>Manage code review and OpenCode auth</CardDescription>
           </CardHeader>
           <CardContent>
             <UserSettingsForm />
@@ -29,8 +29,8 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>環境プリセット</CardTitle>
-            <CardDescription>Gist / Snapshot / Workdir を保存できます</CardDescription>
+            <CardTitle>Environment presets</CardTitle>
+            <CardDescription>Save Gist / Snapshot / Workdir</CardDescription>
           </CardHeader>
           <CardContent>
             <PresetManager />
