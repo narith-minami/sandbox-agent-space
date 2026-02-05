@@ -1,0 +1,56 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3-flash-preview",
+  "chunkingStrategy": "semantic",
+  "maxTokensPerChunk": 4000,
+  "reviewTypes": {
+    "security": {
+      "enabled": true,
+      "focus": [
+        "authentication",
+        "authorization",
+        "input-validation",
+        "secrets",
+        "sql-injection",
+        "xss",
+        "csrf"
+      ]
+    },
+    "performance": {
+      "enabled": true,
+      "focus": [
+        "database-queries",
+        "n-plus-1-problems",
+        "caching",
+        "bundle-size",
+        "memory-leaks",
+        "api-calls"
+      ]
+    },
+    "comprehensive": {
+      "enabled": true,
+      "focus": [
+        "code-quality",
+        "best-practices",
+        "maintainability",
+        "testing",
+        "error-handling",
+        "documentation"
+      ]
+    }
+  },
+  "laravel": {
+    "enabled": true,
+    "checks": ["eloquent-n-plus-1", "mass-assignment", "validation-rules", "route-security"]
+  },
+  "nextjs": {
+    "enabled": true,
+    "checks": [
+      "server-components",
+      "client-components",
+      "api-routes",
+      "image-optimization",
+      "bundle-analysis"
+    ]
+  }
+}
