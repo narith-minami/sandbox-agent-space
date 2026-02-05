@@ -19,6 +19,10 @@ export interface SandboxEnvironment {
   SNAPSHOT_ID?: string;
   /** Required by the Gist run.sh. Plan text when planSource=text. */
   PLAN_TEXT?: string;
+  /** For integrated-review-workflow.sh: .env.local をサンドボックス内で生成するために使用 */
+  ANTHROPIC_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  GEMINI_API_KEY?: string;
   [key: string]: string | undefined;
 }
 
@@ -195,6 +199,13 @@ export class SandboxConfigBuilder {
     if (config.planSource === 'text' && config.planText) {
       env.PLAN_TEXT = config.planText;
     }
+    // integrated-review-workflow.sh 用: サンドボックス内で .env.local を生成するための API キー
+    const anthropicKey = process.env.COMMON_ANTHROPIC_API_KEY;
+    const openaiKey = process.env.COMMON_OPENAI_API_KEY;
+    const geminiKey = process.env.COMMON_GEMINI_API_KEY;
+    if (anthropicKey) env.ANTHROPIC_API_KEY = anthropicKey;
+    if (openaiKey) env.OPENAI_API_KEY = openaiKey;
+    if (geminiKey) env.GEMINI_API_KEY = geminiKey;
     return env;
   }
 

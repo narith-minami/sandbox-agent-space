@@ -218,6 +218,8 @@ export class SandboxLifecycleManager {
       // Download and execute the script from Gist if GIST_URL is provided
       if (options.env.GIST_URL) {
         await this.fileService.downloadAndPrepareGist(sessionId, sandbox, options.env.GIST_URL);
+        // integrated-review-workflow.sh 等は .env.local を参照するため、ホストの API キーで作成
+        await this.fileService.prepareEnvFile(sessionId, sandbox, options.env);
       }
 
       // Run the main command with environment variables

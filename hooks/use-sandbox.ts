@@ -79,11 +79,18 @@ export function useSession(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      const currentStatus = data?.status;
+
+      // Guard: Return early if no data yet (initial fetch not completed)
+      if (!data) {
+        devLog('[useSession] Polling: No data yet, continuing to poll');
+        return 2000; // Keep polling until data arrives
+      }
+
+      const currentStatus = data.status;
       const isTerminalStatus = currentStatus === 'completed' || currentStatus === 'failed';
 
       devLog('[useSession] Polling status:', {
-        sessionId: data?.id.slice(0, 8),
+        sessionId: data.id.slice(0, 8),
         currentStatus,
         prevStatus: prevStatusRef.current,
         isFirstFetch: isFirstFetchRef.current,
@@ -167,7 +174,13 @@ export function useSessionStatus(sessionId: string | null) {
     enabled: !!sessionId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      const isTerminalStatus = data?.status === 'completed' || data?.status === 'failed';
+
+      // Guard: Return early if no data yet
+      if (!data) {
+        return 1000; // Keep polling until data arrives
+      }
+
+      const isTerminalStatus = data.status === 'completed' || data.status === 'failed';
       if (isTerminalStatus) return false;
       return 1000;
     },

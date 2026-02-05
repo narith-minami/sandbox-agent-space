@@ -14,7 +14,8 @@
       "!**/build",
       "!**/node_modules",
       "!**/*.d.ts",
-      "!**/drizzle"
+      "!**/drizzle",
+      "!**/scripts/review-tools"
     ]
   },
   "formatter": {
