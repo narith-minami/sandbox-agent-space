@@ -147,14 +147,14 @@ export function ConfigForm({
   }, [defaultPresetId, selectedPresetId]);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
+      <CardHeader className='px-4 md:px-6'>
         <CardTitle className='flex items-center gap-2'>
           <Sparkles className='h-5 w-5 text-primary' />
           Create Sandbox
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className='px-4 md:px-6'>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
             <div className='grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'>

@@ -46,21 +46,23 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-4 md:space-y-6'>
       {/* Header */}
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between px-4 md:px-0'>
         <div>
-          <h1 className='text-3xl font-bold tracking-tight'>History</h1>
-          <p className='text-muted-foreground'>View past sandbox execution sessions</p>
+          <h1 className='text-2xl md:text-3xl font-bold tracking-tight'>History</h1>
+          <p className='text-sm md:text-base text-muted-foreground'>
+            View past sandbox execution sessions
+          </p>
         </div>
-        <Button variant='outline' onClick={() => refetch()}>
+        <Button variant='outline' size='sm' onClick={() => refetch()}>
           <RefreshCw className='mr-2 h-4 w-4' />
-          Refresh
+          <span className='hidden sm:inline'>Refresh</span>
         </Button>
       </div>
 
       {/* Filters */}
-      <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+      <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 md:px-0'>
         <Tabs
           value={statusFilter}
           onValueChange={handleStatusFilterChange}
@@ -102,10 +104,10 @@ export default function HistoryPage() {
 
       {/* Loading State */}
       {isLoading && (
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6'>
+        <div className='space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6'>
           {Array.from({ length: 6 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder items are static
-            <Skeleton key={i} className='h-48' />
+            <Skeleton key={i} className='h-16 md:h-48' />
           ))}
         </div>
       )}
@@ -130,7 +132,7 @@ export default function HistoryPage() {
       {/* Session Grid */}
       {!isLoading && !error && data && data.sessions.length > 0 && (
         <>
-          <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          <div className='md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6'>
             {data.sessions.map((session) => (
               <SessionCard key={session.id} session={session} />
             ))}

@@ -102,8 +102,8 @@ function HomePageContent() {
       <div className='space-y-6'>
         <div>
           {isCloneLoading || isCommonConfigLoading || isUserSettingsLoading ? (
-            <Card>
-              <CardContent className='flex items-center justify-center h-[600px]'>
+            <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
+              <CardContent className='flex items-center justify-center h-[600px] px-4 md:px-6'>
                 <div className='text-center space-y-4'>
                   <Loader2 className='h-8 w-8 animate-spin mx-auto' />
                   <p className='text-muted-foreground'>Loading configuration...</p>
@@ -148,8 +148,8 @@ export default function HomePage() {
     <Suspense
       fallback={
         <div className='space-y-6'>
-          <Card>
-            <CardContent className='flex items-center justify-center h-[600px]'>
+          <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
+            <CardContent className='flex items-center justify-center h-[600px] px-4 md:px-6'>
               <Loader2 className='h-8 w-8 animate-spin' />
             </CardContent>
           </Card>
