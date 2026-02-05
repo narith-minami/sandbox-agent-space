@@ -109,6 +109,7 @@ export function useSpeechRecognition(
   const [isSupported, setIsSupported] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const finalTranscriptRef = useRef('');
 
   // Check for browser support
   useEffect(() => {
@@ -141,21 +142,27 @@ export function useSpeechRecognition(
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
+      let interimText = '';
+      let finalText = '';
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscript += result[0].transcript;
+          finalText += result[0].transcript;
         } else {
-          interimTranscript += result[0].transcript;
+          interimText += result[0].transcript;
         }
       }
 
-      const currentTranscript = finalTranscript || interimTranscript;
-      setTranscript(currentTranscript);
-      onResult?.(currentTranscript, !!finalTranscript);
+      // Accumulate final transcripts
+      if (finalText) {
+        finalTranscriptRef.current += (finalTranscriptRef.current ? ' ' : '') + finalText;
+      }
+
+      // Combine accumulated final transcript with current interim
+      const fullTranscript = finalTranscriptRef.current + (interimText ? ` ${interimText}` : '');
+      setTranscript(fullTranscript);
+      onResult?.(fullTranscript, !!finalText);
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -182,6 +189,7 @@ export function useSpeechRecognition(
 
     setError(null);
     setTranscript('');
+    finalTranscriptRef.current = '';
 
     try {
       recognitionRef.current.start();
@@ -213,6 +221,7 @@ export function useSpeechRecognition(
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
+    finalTranscriptRef.current = '';
   }, []);
 
   return {
