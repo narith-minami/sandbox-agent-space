@@ -11,7 +11,7 @@ function isMissingRelationError(error: unknown): boolean {
 }
 
 interface PresetRouteParams {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export async function PATCH(request: Request, { params }: PresetRouteParams) {
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: PresetRouteParams) {
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
     const idResult = UUIDSchema.safeParse(id);
     if (!idResult.success) {
       return NextResponse.json<ApiError>(
@@ -92,7 +92,7 @@ export async function DELETE(_: Request, { params }: PresetRouteParams) {
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
     const idResult = UUIDSchema.safeParse(id);
     if (!idResult.success) {
       return NextResponse.json<ApiError>(
