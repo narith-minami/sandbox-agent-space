@@ -158,13 +158,13 @@ export function ConfigForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
             <div className='grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'>
-              <div className='lg:col-span-1'>
+              <div className='min-w-0 lg:col-span-1'>
                 <RepositorySection control={form.control} setValue={form.setValue} compact />
               </div>
-              <div>
+              <div className='min-w-0'>
                 <ModelSelector control={form.control} variant='select' />
               </div>
-              <div>
+              <div className='min-w-0'>
                 <EnvironmentPresetSelector
                   presets={presets}
                   selectedPresetId={selectedPresetId}
