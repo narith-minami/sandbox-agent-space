@@ -9,6 +9,7 @@ import {
   GitBranch,
   GitPullRequest,
   Loader2,
+  Timer,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,10 @@ export function SessionCard({ session }: SessionCardProps) {
                   <Clock className='h-3 w-3' />
                   {formattedDate}
                 </span>
-                <span className='flex items-center gap-1 font-semibold'>{duration}</span>
+                <span className='flex items-center gap-1 font-semibold'>
+                  <Timer className='h-3 w-3' />
+                  {duration}
+                </span>
                 {session.config.frontDir && (
                   <span className='flex items-center gap-1 truncate'>
                     <GitBranch className='h-3 w-3' />
@@ -130,7 +134,7 @@ export function SessionCard({ session }: SessionCardProps) {
             <span>{formattedDate}</span>
           </div>
           <div className='flex items-center gap-2'>
-            <Clock className='h-4 w-4' />
+            <Timer className='h-4 w-4' />
             <span className='font-semibold'>Duration: {duration}</span>
           </div>
           <div className='flex items-center gap-2'>
