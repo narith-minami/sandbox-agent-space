@@ -79,7 +79,10 @@ export function SessionStatusCard({
             <div className='flex justify-between'>
               <span className='text-muted-foreground'>Duration:</span>
               <span className='text-xs font-semibold'>
-                {calculateSessionDuration(new Date(session.createdAt), session.endedAt ? new Date(session.endedAt) : null)}
+                {calculateSessionDuration(
+                  new Date(session.createdAt),
+                  session.endedAt ? new Date(session.endedAt) : null
+                )}
               </span>
             </div>
           )}
