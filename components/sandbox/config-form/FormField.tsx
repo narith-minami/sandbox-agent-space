@@ -1,7 +1,7 @@
 'use client';
 
 import { Mic, MicOff } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { Control } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -108,6 +108,9 @@ export function FormTextArea({
 }: FormTextAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cursorPositionRef = useRef<number>(0);
+  const prevTranscriptRef = useRef('');
+  const fieldValueRef = useRef<string>('');
+  const onChangeRef = useRef<((value: string) => void) | null>(null);
 
   const { isListening, isSupported, transcript, toggleListening, resetTranscript, error } =
     useSpeechRecognition({
@@ -115,12 +118,16 @@ export function FormTextArea({
       interimResults: true,
     });
 
-  // Callback to append transcript to field
-  const appendTranscript = useCallback(
-    (currentValue: string, newTranscript: string, onChange: (value: string) => void) => {
-      if (!newTranscript) return;
-
+  // Handle transcript updates when listening stops
+  useEffect(() => {
+    if (
+      !isListening &&
+      transcript &&
+      transcript !== prevTranscriptRef.current &&
+      onChangeRef.current
+    ) {
       const position = cursorPositionRef.current;
+      const currentValue = fieldValueRef.current;
       const before = currentValue.slice(0, position);
       const after = currentValue.slice(position);
 
@@ -128,37 +135,25 @@ export function FormTextArea({
       const needsSpace = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
       const separator = needsSpace ? ' ' : '';
 
-      const newValue = before + separator + newTranscript + after;
-      onChange(newValue);
+      const newValue = before + separator + transcript + after;
+      onChangeRef.current(newValue);
 
       // Update cursor position for next input
-      cursorPositionRef.current = position + separator.length + newTranscript.length;
-    },
-    []
-  );
+      cursorPositionRef.current = position + separator.length + transcript.length;
+
+      prevTranscriptRef.current = transcript;
+      resetTranscript();
+    }
+  }, [isListening, transcript, resetTranscript]);
 
   return (
     <FormField
       control={control}
       name={name}
       render={({ field, fieldState }) => {
-        // Handle transcript updates when listening stops
-        // biome-ignore lint/correctness/useHookAtTopLevel: This is a render prop pattern
-        const prevTranscriptRef = useRef('');
-
-        // biome-ignore lint/correctness/useHookAtTopLevel: This is a render prop pattern
-        // biome-ignore lint/correctness/useExhaustiveDependencies: isListening and transcript are from outer hook
-        useEffect(() => {
-          if (!isListening && transcript && transcript !== prevTranscriptRef.current) {
-            appendTranscript(
-              typeof field.value === 'string' ? field.value : '',
-              transcript,
-              field.onChange
-            );
-            prevTranscriptRef.current = transcript;
-            resetTranscript();
-          }
-        }, [isListening, transcript, field.value, field.onChange]);
+        // Update refs with current field value and onChange
+        fieldValueRef.current = typeof field.value === 'string' ? field.value : '';
+        onChangeRef.current = field.onChange;
 
         return (
           <FormItem>
