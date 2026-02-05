@@ -16,7 +16,7 @@ import { useSandboxCreate, useSession } from '@/hooks/use-sandbox';
 import { useSessionCloning } from '@/hooks/use-session-cloning';
 import { useUserSettings } from '@/hooks/use-user-settings';
 import { getLastUsedValues, saveLastUsedValues } from '@/lib/storage';
-import type { SandboxConfig, StreamLogEntry } from '@/types/sandbox';
+import type { SandboxConfig } from '@/types/sandbox';
 
 function HomePageContent() {
   const router = useRouter();
@@ -129,7 +129,7 @@ function HomePageContent() {
               sessionId={sessionId}
               session={session}
               isLoading={isSessionLoading}
-              logs={logs as unknown as StreamLogEntry[]}
+              logs={logs}
               isConnected={isConnected}
               isComplete={isComplete}
               streamError={streamError}

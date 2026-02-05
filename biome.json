@@ -14,10 +14,8 @@
       "!**/build",
       "!**/node_modules",
       "!**/*.d.ts",
-      "!**/drizzle"
-    ],
-    "ignore": [
-      "**/scripts/review-tools/**"
+      "!**/drizzle",
+      "!**/scripts/review-tools"
     ]
   },
   "formatter": {

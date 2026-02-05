@@ -208,7 +208,7 @@ export interface CommandOptions {
 }
 
 // Log stream entry from Vercel Sandbox SDK
-export interface StreamLogEntry {
+export interface SandboxLogEntry {
   stream: 'stdout' | 'stderr';
   data: string;
 }
