@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Clock, Loader2, StopCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import type { SessionStatus } from '@/types/sandbox';
 
 interface StatusBadgeProps {
@@ -15,6 +16,7 @@ const statusConfig: Record<
     label: string;
     variant: 'default' | 'secondary' | 'destructive' | 'outline';
     icon: typeof Loader2;
+    className?: string;
   }
 > = {
   pending: {
@@ -26,6 +28,7 @@ const statusConfig: Record<
     label: 'Running',
     variant: 'default',
     icon: Loader2,
+    className: 'bg-sky-500 text-white hover:bg-sky-500/90',
   },
   stopping: {
     label: 'Stopping',
@@ -36,6 +39,7 @@ const statusConfig: Record<
     label: 'Completed',
     variant: 'default',
     icon: CheckCircle2,
+    className: 'bg-emerald-500 text-white hover:bg-emerald-500/90',
   },
   failed: {
     label: 'Failed',
@@ -49,7 +53,7 @@ export function StatusBadge({ status, showIcon = true }: StatusBadgeProps) {
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className='gap-1'>
+    <Badge variant={config.variant} className={cn('gap-1', config.className)}>
       {showIcon && <Icon className={`h-3 w-3 ${status === 'running' ? 'animate-spin' : ''}`} />}
       {config.label}
     </Badge>
