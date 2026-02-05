@@ -110,11 +110,20 @@ export function RepositorySection({ control, setValue, compact = false }: Reposi
                           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                           Loading repositories...
                         </>
-                      ) : field.value ? (
-                        repos.find((repo) => repo.htmlUrl === field.value)?.fullName ||
-                        'Select repository'
                       ) : (
-                        'Select repository'
+                        <span
+                          className='truncate'
+                          title={
+                            field.value
+                              ? repos.find((repo) => repo.htmlUrl === field.value)?.fullName
+                              : undefined
+                          }
+                        >
+                          {field.value
+                            ? repos.find((repo) => repo.htmlUrl === field.value)?.fullName ||
+                              'Select repository'
+                            : 'Select repository'}
+                        </span>
                       )}
                       <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
                     </Button>
@@ -153,8 +162,10 @@ export function RepositorySection({ control, setValue, compact = false }: Reposi
                                 repo.htmlUrl === field.value ? 'opacity-100' : 'opacity-0'
                               )}
                             />
-                            <div className='flex flex-col'>
-                              <span className='font-medium'>{repo.fullName}</span>
+                            <div className='flex flex-col min-w-0'>
+                              <span className='font-medium truncate' title={repo.fullName}>
+                                {repo.fullName}
+                              </span>
                               {repo.description && (
                                 <span className='text-xs text-muted-foreground line-clamp-1'>
                                   {repo.description}
