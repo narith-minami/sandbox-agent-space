@@ -59,8 +59,9 @@ export function useSandboxCreate() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate sessions list
+      // Invalidate sessions list and sidebar sessions
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['sidebar-sessions'] });
     },
   });
 }
