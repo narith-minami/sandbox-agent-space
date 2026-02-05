@@ -1,1 +1,1 @@
-PCの時にrepo nameが長いとはみ出るのでリサイズするか省略する
+task inputに音声入力を導入(web speech api)

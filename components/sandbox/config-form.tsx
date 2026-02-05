@@ -183,6 +183,7 @@ export function ConfigForm({
               description='Saved as Markdown inside the sandbox'
               rows={18}
               className='min-h-[320px]'
+              enableVoiceInput
             />
 
             <input type='hidden' {...form.register('modelProvider')} />
