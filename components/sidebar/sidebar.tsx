@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useResponsiveSidebar } from '@/hooks/use-responsive-sidebar';
 import type { SidebarFilters } from '@/hooks/use-sidebar-sessions';
 import { useSidebarSessions } from '@/hooks/use-sidebar-sessions';
 import { cn } from '@/lib/utils';
@@ -11,7 +12,7 @@ import { SessionList } from './session-list';
 import { SidebarFiltersPanel } from './sidebar-filters';
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+  const { isOpen, toggle } = useResponsiveSidebar({ breakpoint: 'lg' });
   const [filters, setFilters] = useState<SidebarFilters>({
     status: undefined,
     prStatus: undefined,
@@ -45,7 +46,7 @@ export function Sidebar() {
           variant='ghost'
           size='icon'
           className={cn('ml-auto h-7 w-7', !isOpen && 'mx-auto')}
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={toggle}
           title={isOpen ? 'Close sidebar' : 'Open sidebar'}
         >
           {isOpen ? <ChevronLeft className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
