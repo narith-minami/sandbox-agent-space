@@ -11,8 +11,8 @@ interface EmptySessionStateProps {
  */
 export function EmptySessionState({ isCloning }: EmptySessionStateProps) {
   return (
-    <Card>
-      <CardContent className='flex items-center justify-center h-[400px] text-muted-foreground'>
+    <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
+      <CardContent className='flex items-center justify-center h-[400px] text-muted-foreground px-4 md:px-6'>
         <div className='text-center space-y-2'>
           <p>No active session</p>
           <p className='text-sm'>

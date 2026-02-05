@@ -36,15 +36,15 @@ export function SessionStatusCard({
   streamError,
 }: SessionStatusCardProps) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
+      <CardHeader className='px-4 md:px-6'>
         <div className='flex items-center justify-between'>
           <CardTitle>Session</CardTitle>
           {session && <StatusBadge status={session.status} />}
           {isLoading && !session && <Loader2 className='h-4 w-4 animate-spin' />}
         </div>
       </CardHeader>
-      <CardContent className='space-y-4'>
+      <CardContent className='space-y-4 px-4 md:px-6'>
         <div className='text-sm space-y-2'>
           <div className='flex justify-between'>
             <span className='text-muted-foreground'>Session ID:</span>
