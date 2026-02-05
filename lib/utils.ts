@@ -11,6 +11,6 @@ export function cn(...inputs: ClassValue[]) {
  * @returns The repository name only (without the org prefix)
  */
 export function extractRepoName(slug: string): string {
-  const parts = slug.split('/');
-  return parts.length >= 2 ? parts[parts.length - 1] : slug;
+  const parts = slug.split('/').filter(Boolean);
+  return parts.pop() || slug;
 }
