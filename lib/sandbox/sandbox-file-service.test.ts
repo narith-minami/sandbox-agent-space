@@ -137,6 +137,61 @@ describe('SandboxFileService', () => {
     });
   });
 
+  describe('prepareEnvFile', () => {
+    it('should write /vercel/sandbox/.env.local when API keys are present', async () => {
+      const service = new SandboxFileService();
+      const { addLog } = await import('@/lib/db/queries');
+
+      const mockWriteFiles = vi.fn().mockResolvedValue(undefined);
+      const mockSandbox = {
+        writeFiles: mockWriteFiles,
+      } as unknown as Sandbox;
+
+      await service.prepareEnvFile('session-123', mockSandbox, {
+        ANTHROPIC_API_KEY: 'sk-ant-xxx',
+        GITHUB_TOKEN: 'ghp_xxx',
+      });
+
+      expect(mockWriteFiles).toHaveBeenCalledWith([
+        {
+          path: '/vercel/sandbox/.env.local',
+          content: expect.any(Buffer),
+        },
+      ]);
+      const content = (mockWriteFiles.mock.calls[0][0][0] as { content: Buffer }).content.toString(
+        'utf-8'
+      );
+      expect(content).toContain('ANTHROPIC_API_KEY=sk-ant-xxx');
+      expect(content).toContain('GITHUB_TOKEN=ghp_xxx');
+      expect(addLog).toHaveBeenCalledWith({
+        sessionId: 'session-123',
+        level: 'info',
+        message: 'Created /vercel/sandbox/.env.local for Gist workflow',
+      });
+    });
+
+    it('should skip writing when no API keys in env', async () => {
+      const service = new SandboxFileService();
+      const { addLog } = await import('@/lib/db/queries');
+
+      const mockWriteFiles = vi.fn().mockResolvedValue(undefined);
+      const mockSandbox = {
+        writeFiles: mockWriteFiles,
+      } as unknown as Sandbox;
+
+      await service.prepareEnvFile('session-123', mockSandbox, {
+        GIST_URL: 'https://gist.example/run.sh',
+      });
+
+      expect(mockWriteFiles).not.toHaveBeenCalled();
+      expect(addLog).toHaveBeenCalledWith({
+        sessionId: 'session-123',
+        level: 'debug',
+        message: 'No AI API keys in env; skipping .env.local creation',
+      });
+    });
+  });
+
   describe('writeFiles', () => {
     it('should write files and log', async () => {
       const service = new SandboxFileService();
