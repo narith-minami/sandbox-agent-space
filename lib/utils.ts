@@ -14,3 +14,40 @@ export function extractRepoName(slug: string): string {
   const parts = slug.split('/').filter(Boolean);
   return parts.pop() || slug;
 }
+
+/**
+ * Formats a duration in milliseconds to a human-readable string
+ * @param durationMs - Duration in milliseconds
+ * @returns Formatted duration string (e.g., "2h 30m", "45m", "30s")
+ */
+export function formatDuration(durationMs: number): string {
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    const remainingHours = hours % 24;
+    return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+  } else if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  } else if (minutes > 0) {
+    const remainingSeconds = seconds % 60;
+    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+/**
+ * Calculates and formats the duration between two dates
+ * @param startDate - Start date
+ * @param endDate - End date (defaults to current time if not provided)
+ * @returns Formatted duration string
+ */
+export function calculateSessionDuration(startDate: Date, endDate?: Date | null): string {
+  const end = endDate || new Date();
+  const durationMs = end.getTime() - startDate.getTime();
+  return formatDuration(durationMs);
+}

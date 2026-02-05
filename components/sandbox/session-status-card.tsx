@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/sandbox/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { StreamLogEntry } from '@/hooks/use-log-stream';
+import { calculateSessionDuration } from '@/lib/utils';
 import type { SandboxSessionWithLogs } from '@/types/sandbox';
 
 interface SessionStatusCardProps {
@@ -62,6 +63,31 @@ export function SessionStatusCard({
               <span className='font-mono text-xs'>{session.runtime}</span>
             </div>
           )}
+          {session?.createdAt &&
+            (() => {
+              const startDate = new Date(session.createdAt);
+              const endDate = session.endedAt ? new Date(session.endedAt) : null;
+              return (
+                <>
+                  <div className='flex justify-between'>
+                    <span className='text-muted-foreground'>Started:</span>
+                    <span className='text-xs'>{startDate.toLocaleString()}</span>
+                  </div>
+                  {endDate && (
+                    <div className='flex justify-between'>
+                      <span className='text-muted-foreground'>Ended:</span>
+                      <span className='text-xs'>{endDate.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className='flex justify-between'>
+                    <span className='text-muted-foreground'>Duration:</span>
+                    <span className='text-xs font-semibold'>
+                      {calculateSessionDuration(startDate, endDate)}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
           <div className='flex justify-between'>
             <span className='text-muted-foreground'>Stream Status:</span>
             <span className={isConnected ? 'text-green-500' : 'text-yellow-500'}>

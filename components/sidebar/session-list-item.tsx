@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { cn, extractRepoName } from '@/lib/utils';
+import { calculateSessionDuration, cn, extractRepoName } from '@/lib/utils';
 import type { SandboxSession, SessionStatus } from '@/types/sandbox';
 import { PrStatusBadge } from './pr-status-badge';
 
@@ -116,6 +116,10 @@ export function SessionListItem({
   const truncatedRepoSlug = truncateRepoSlug(repoSlug);
   const formattedDate = formatSessionDate(session.createdAt);
   const prNumber = extractPrNumber(session.prUrl);
+  const duration = calculateSessionDuration(
+    new Date(session.createdAt),
+    session.endedAt ? new Date(session.endedAt) : null
+  );
   const [isHovered, setIsHovered] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
@@ -191,6 +195,7 @@ export function SessionListItem({
                 <span className={cn('h-2 w-2 rounded-full', config.dotClassName)} />
                 <span className='text-muted-foreground/70'>{formattedDate}</span>
               </span>
+              <span className='font-semibold text-muted-foreground/70'>({duration})</span>
               {session.prStatus && <PrStatusBadge status={session.prStatus} compact={false} />}
               {prNumber && (
                 <span className='text-xs font-medium text-muted-foreground/70'>{prNumber}</span>

@@ -59,9 +59,26 @@ export async function updateSession(
     Pick<Session, 'sandboxId' | 'status' | 'runtime' | 'prUrl' | 'prStatus' | 'archived'>
   >
 ): Promise<Session | undefined> {
+  const now = new Date();
+  const finalUpdates: Record<string, unknown> = { ...updates, updatedAt: now };
+
+  // Set endedAt when session completes or fails (only if not already set)
+  if (updates.status === 'completed' || updates.status === 'failed') {
+    const [existingSession] = await db
+      .select({ endedAt: sessions.endedAt })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1);
+
+    // Only set endedAt if the session exists and it's not already set
+    if (existingSession && !existingSession.endedAt) {
+      finalUpdates.endedAt = now;
+    }
+  }
+
   const [session] = await db
     .update(sessions)
-    .set({ ...updates, updatedAt: new Date() })
+    .set(finalUpdates)
     .where(eq(sessions.id, sessionId))
     .returning();
   return session;

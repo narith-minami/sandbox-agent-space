@@ -9,12 +9,13 @@ import {
   GitBranch,
   GitPullRequest,
   Loader2,
+  Timer,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useArchiveSession } from '@/hooks/use-archive-session';
-import { extractRepoName } from '@/lib/utils';
+import { calculateSessionDuration, extractRepoName } from '@/lib/utils';
 import type { SandboxSession } from '@/types/sandbox';
 import { StatusBadge } from './status-badge';
 
@@ -32,6 +33,11 @@ export function SessionCard({ session }: SessionCardProps) {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const duration = calculateSessionDuration(
+    new Date(session.createdAt),
+    session.endedAt ? new Date(session.endedAt) : null
+  );
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -59,6 +65,10 @@ export function SessionCard({ session }: SessionCardProps) {
                 <span className='flex items-center gap-1'>
                   <Clock className='h-3 w-3' />
                   {formattedDate}
+                </span>
+                <span className='flex items-center gap-1 font-semibold'>
+                  <Timer className='h-3 w-3' />
+                  {duration}
                 </span>
                 {session.config.frontDir && (
                   <span className='flex items-center gap-1 truncate'>
@@ -122,6 +132,10 @@ export function SessionCard({ session }: SessionCardProps) {
           <div className='flex items-center gap-2'>
             <Clock className='h-4 w-4' />
             <span>{formattedDate}</span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Timer className='h-4 w-4' />
+            <span className='font-semibold'>Duration: {duration}</span>
           </div>
           <div className='flex items-center gap-2'>
             <GitBranch className='h-4 w-4' />
