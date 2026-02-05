@@ -181,8 +181,7 @@ export function ConfigForm({
               label='Task'
               placeholder='Describe what you want done, task details, expected output...'
               description='Saved as Markdown inside the sandbox'
-              rows={18}
-              className='min-h-[320px]'
+              rows={4}
               enableVoiceInput
             />
 
