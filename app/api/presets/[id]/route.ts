@@ -1,3 +1,4 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getGitHubSessionForApi } from '@/lib/auth/get-github-session';
 import { deleteEnvironmentPreset, updateEnvironmentPreset } from '@/lib/db/queries';
@@ -11,10 +12,10 @@ function isMissingRelationError(error: unknown): boolean {
 }
 
 interface PresetRouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export async function PATCH(request: Request, { params }: PresetRouteParams) {
+export async function PATCH(request: NextRequest, { params }: PresetRouteParams) {
   try {
     const sessionResult = await getGitHubSessionForApi();
     if (!sessionResult) {
@@ -24,7 +25,7 @@ export async function PATCH(request: Request, { params }: PresetRouteParams) {
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const idResult = UUIDSchema.safeParse(id);
     if (!idResult.success) {
       return NextResponse.json<ApiError>(
@@ -82,7 +83,7 @@ export async function PATCH(request: Request, { params }: PresetRouteParams) {
   }
 }
 
-export async function DELETE(_: Request, { params }: PresetRouteParams) {
+export async function DELETE(_: NextRequest, { params }: PresetRouteParams) {
   try {
     const sessionResult = await getGitHubSessionForApi();
     if (!sessionResult) {
@@ -92,7 +93,7 @@ export async function DELETE(_: Request, { params }: PresetRouteParams) {
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const idResult = UUIDSchema.safeParse(id);
     if (!idResult.success) {
       return NextResponse.json<ApiError>(
