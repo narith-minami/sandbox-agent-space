@@ -62,9 +62,18 @@ export async function updateSession(
   const now = new Date();
   const finalUpdates: Record<string, unknown> = { ...updates, updatedAt: now };
 
-  // Set endedAt when session completes or fails
+  // Set endedAt when session completes or fails (only if not already set)
   if (updates.status === 'completed' || updates.status === 'failed') {
-    finalUpdates.endedAt = now;
+    const [existingSession] = await db
+      .select({ endedAt: sessions.endedAt })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .limit(1);
+
+    // Only set endedAt if the session exists and it's not already set
+    if (existingSession && !existingSession.endedAt) {
+      finalUpdates.endedAt = now;
+    }
   }
 
   const [session] = await db
