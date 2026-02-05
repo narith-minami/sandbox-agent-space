@@ -64,6 +64,7 @@ export interface SandboxSession {
   archived?: boolean; // Archive flag
   createdAt: Date;
   updatedAt: Date;
+  endedAt?: Date | null; // Session end time
 }
 
 export interface SandboxSessionWithLogs extends SandboxSession {

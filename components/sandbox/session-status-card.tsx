@@ -5,6 +5,7 @@ import { LogViewer } from '@/components/sandbox/log-viewer';
 import { StatusBadge } from '@/components/sandbox/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { calculateSessionDuration } from '@/lib/utils';
 import type { StreamLogEntry } from '@/hooks/use-log-stream';
 import type { SandboxSessionWithLogs } from '@/types/sandbox';
 
@@ -60,6 +61,26 @@ export function SessionStatusCard({
             <div className='flex justify-between'>
               <span className='text-muted-foreground'>Runtime:</span>
               <span className='font-mono text-xs'>{session.runtime}</span>
+            </div>
+          )}
+          {session?.createdAt && (
+            <div className='flex justify-between'>
+              <span className='text-muted-foreground'>Started:</span>
+              <span className='text-xs'>{new Date(session.createdAt).toLocaleString()}</span>
+            </div>
+          )}
+          {session?.endedAt && (
+            <div className='flex justify-between'>
+              <span className='text-muted-foreground'>Ended:</span>
+              <span className='text-xs'>{new Date(session.endedAt).toLocaleString()}</span>
+            </div>
+          )}
+          {session?.createdAt && (
+            <div className='flex justify-between'>
+              <span className='text-muted-foreground'>Duration:</span>
+              <span className='text-xs font-semibold'>
+                {calculateSessionDuration(new Date(session.createdAt), session.endedAt ? new Date(session.endedAt) : null)}
+              </span>
             </div>
           )}
           <div className='flex justify-between'>

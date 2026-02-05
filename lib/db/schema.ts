@@ -17,6 +17,7 @@ export const sessions = pgTable('sessions', {
   archived: boolean('archived').default(false).notNull(), // Archive flag
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  endedAt: timestamp('ended_at', { withTimezone: true }), // Session end time (when completed/failed)
 });
 
 // Logs table
