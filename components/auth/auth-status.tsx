@@ -34,7 +34,7 @@ export async function AuthStatus() {
       <div className='flex items-center gap-2'>
         <span className='text-muted-foreground'>@{session.user.login}</span>
       </div>
-      <form action='/api/auth/github/logout' method='post'>
+      <form action='/api/auth/github/logout' method='post' className='hidden sm:block'>
         <Button size='sm' variant='outline' type='submit'>
           Sign out
         </Button>
