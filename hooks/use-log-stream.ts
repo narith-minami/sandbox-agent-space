@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { LogLevel } from '@/types/sandbox';
 
-interface StreamLogEntry {
+export interface StreamLogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;

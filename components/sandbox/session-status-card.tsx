@@ -5,7 +5,8 @@ import { LogViewer } from '@/components/sandbox/log-viewer';
 import { StatusBadge } from '@/components/sandbox/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { SandboxSessionWithLogs, StreamLogEntry } from '@/types/sandbox';
+import type { StreamLogEntry } from '@/hooks/use-log-stream';
+import type { SandboxSessionWithLogs } from '@/types/sandbox';
 
 interface SessionStatusCardProps {
   sessionId: string;
@@ -81,9 +82,9 @@ export function SessionStatusCard({
           <TabsContent value='stream' className='mt-4'>
             <LogViewer
               logs={logs.map((log) => ({
-                timestamp: new Date().toISOString(),
-                level: log.stream === 'stderr' ? 'stderr' : 'stdout',
-                message: log.data,
+                timestamp: log.timestamp,
+                level: log.level,
+                message: log.message,
               }))}
               maxHeight='400px'
             />
