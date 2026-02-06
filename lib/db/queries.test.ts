@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SandboxRuntime } from '@/lib/sandbox/auth';
 import {
   createMockLog,
@@ -24,11 +24,21 @@ import {
   setSessionStatus,
   updateSession,
   updateSnapshotStatus,
+  resetSessionSchemaCacheForTests,
 } from './queries';
 import type { Log, Session, SnapshotRecord } from './schema';
 
 // Mock the database client with shared utilities
 vi.mock('./client', () => setupMockDatabase());
+
+beforeEach(async () => {
+  const { db } = await import('./client');
+  vi.clearAllMocks();
+  resetSessionSchemaCacheForTests();
+  vi.mocked(db.execute).mockResolvedValue(
+    { rows: [{ found: 1 }] } as unknown as Awaited<ReturnType<typeof db.execute>>
+  );
+});
 
 describe('createSession', () => {
   it('should create a session with minimal config', async () => {
@@ -106,6 +116,45 @@ describe('createSession', () => {
     expect(result.prUrl).toBe('https://github.com/owner/repo/pull/1');
     expect(result.memo).toBe('Test memo');
   });
+
+  it('should fallback to compatibility insert when ended_at is missing', async () => {
+    const { db } = await import('./client');
+    const now = new Date();
+    vi.mocked(db.execute)
+      .mockResolvedValueOnce({ rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>)
+      .mockResolvedValueOnce(
+        {
+          rows: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              sandbox_id: null,
+              status: 'pending',
+              config: {
+                planSource: 'file',
+                planFile: 'plan.md',
+              },
+              runtime: 'node24',
+              model_provider: 'anthropic',
+              model_id: 'claude-3-5-sonnet-20241022',
+              pr_url: null,
+              pr_status: null,
+              memo: null,
+              archived: false,
+              created_at: now,
+              updated_at: now,
+            },
+          ],
+        } as unknown as Awaited<ReturnType<typeof db.execute>>
+      );
+
+    const result = await createSession({
+      planSource: 'file',
+      planFile: 'plan.md',
+    } as SandboxConfig);
+
+    expect(result.id).toBe('550e8400-e29b-41d4-a716-446655440000');
+    expect(result.endedAt).toBeNull();
+  });
 });
 
 describe('getSession', () => {
@@ -139,6 +188,53 @@ describe('getSession', () => {
 
     const result = await getSession('550e8400-e29b-41d4-a716-446655440000');
     expect(result).toBeUndefined();
+  });
+
+  it('should fallback to legacy select when ended_at is missing', async () => {
+    const now = new Date();
+    const { db } = await import('./client');
+    vi.mocked(db.select).mockImplementationOnce(
+      () =>
+        ({
+          from: () => ({
+            where: () =>
+              Promise.reject({
+                cause: {
+                  code: '42703',
+                  message: 'column "ended_at" does not exist',
+                },
+              }),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
+    vi.mocked(db.select).mockImplementationOnce(
+      () =>
+        ({
+          from: () => ({
+            where: () =>
+              Promise.resolve([
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440000',
+                  sandboxId: null,
+                  status: 'running',
+                  config: { planSource: 'file', planFile: 'plan.md' },
+                  runtime: 'node24',
+                  modelProvider: 'anthropic',
+                  modelId: 'claude-3-5-sonnet-20241022',
+                  prUrl: null,
+                  prStatus: null,
+                  memo: null,
+                  archived: false,
+                  createdAt: now,
+                  updatedAt: now,
+                },
+              ]),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
+
+    const result = await getSession('550e8400-e29b-41d4-a716-446655440000');
+    expect(result?.endedAt).toBeNull();
   });
 });
 
@@ -251,6 +347,97 @@ describe('updateSession', () => {
       status: 'completed',
     });
     expect(result).toBeUndefined();
+  });
+
+  it('should skip endedAt update when ended_at column is missing', async () => {
+    const mockSession = createMockSession({ status: 'completed' as SessionStatus });
+
+    const { db } = await import('./client');
+    vi.mocked(db.execute).mockResolvedValue(
+      { rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>
+    );
+    vi.mocked(db.update).mockImplementation(
+      () =>
+        ({
+          set: () => ({
+            where: () => ({
+              returning: () => Promise.resolve([mockSession]),
+            }),
+          }),
+        }) as unknown as ReturnType<typeof db.update>
+    );
+
+    const result = await updateSession('550e8400-e29b-41d4-a716-446655440000', {
+      status: 'completed',
+    });
+
+    expect(result?.status).toBe('completed');
+    expect(db.select).not.toHaveBeenCalled();
+  });
+
+  it('should retry with legacy returning when update fails due to missing ended_at', async () => {
+    const { db } = await import('./client');
+    const legacySession = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      sandboxId: null,
+      status: 'completed' as SessionStatus,
+      config: createMockSession().config,
+      runtime: 'node24' as SandboxRuntime,
+      modelProvider: 'anthropic',
+      modelId: 'claude-3-5-sonnet-20241022',
+      prUrl: null,
+      prStatus: null,
+      memo: null,
+      archived: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    vi.mocked(db.select).mockImplementation(
+      () =>
+        ({
+          from: () => ({
+            where: () => ({
+              limit: () => Promise.resolve([{ endedAt: null }]),
+            }),
+          }),
+        }) as unknown as ReturnType<typeof db.select>
+    );
+
+    let updateCount = 0;
+    vi.mocked(db.update).mockImplementation(() => {
+      updateCount++;
+      if (updateCount === 1) {
+        return {
+          set: () => ({
+            where: () => ({
+              returning: () =>
+                Promise.reject({
+                  cause: {
+                    code: '42703',
+                    message: 'column "ended_at" does not exist',
+                  },
+                }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof db.update>;
+      }
+
+      return {
+        set: () => ({
+          where: () => ({
+            returning: () => Promise.resolve([legacySession]),
+          }),
+        }),
+      } as unknown as ReturnType<typeof db.update>;
+    });
+
+    const result = await updateSession('550e8400-e29b-41d4-a716-446655440000', {
+      status: 'completed',
+    });
+
+    expect(updateCount).toBe(2);
+    expect(result?.endedAt).toBeNull();
   });
 });
 
@@ -374,6 +561,128 @@ describe('listSessions', () => {
 
     const result = await listSessions(1, 20, { archived: true });
     expect(result.sessions[0].archived).toBe(true);
+  });
+
+  it('should fallback to legacy select when ended_at column is missing', async () => {
+    const legacySession = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      sandboxId: null,
+      status: 'running' as SessionStatus,
+      config: createMockSession().config,
+      runtime: 'node24' as SandboxRuntime,
+      modelProvider: 'anthropic',
+      modelId: 'claude-3-5-sonnet-20241022',
+      prUrl: null,
+      prStatus: null,
+      memo: null,
+      archived: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const { db } = await import('./client');
+    vi.mocked(db.execute).mockResolvedValue(
+      { rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>
+    );
+    let selectCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCount++;
+      if (selectCount === 1) {
+        return {
+          from: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: () => ({
+                  offset: () => Promise.resolve([legacySession]),
+                }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof db.select>;
+      }
+      return {
+        from: () => ({
+          where: () => Promise.resolve([{ id: legacySession.id }]),
+        }),
+      } as unknown as ReturnType<typeof db.select>;
+    });
+
+    const result = await listSessions(1, 20);
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0].endedAt).toBeNull();
+    expect(result.total).toBe(1);
+  });
+
+  it('should fallback when select-all fails with missing ended_at', async () => {
+    const legacySession = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      sandboxId: null,
+      status: 'running' as SessionStatus,
+      config: createMockSession().config,
+      runtime: 'node24' as SandboxRuntime,
+      modelProvider: 'anthropic',
+      modelId: 'claude-3-5-sonnet-20241022',
+      prUrl: null,
+      prStatus: null,
+      memo: null,
+      archived: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const { db } = await import('./client');
+    let selectCount = 0;
+    vi.mocked(db.select).mockImplementation(() => {
+      selectCount++;
+      if (selectCount === 1) {
+        return {
+          from: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: () => ({
+                  offset: () =>
+                    Promise.reject({
+                      cause: {
+                        code: '42703',
+                        message: 'column "ended_at" does not exist',
+                      },
+                    }),
+                }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof db.select>;
+      }
+      if (selectCount === 2) {
+        return {
+          from: () => ({
+            where: () => Promise.resolve([{ id: legacySession.id }]),
+          }),
+        } as unknown as ReturnType<typeof db.select>;
+      }
+      if (selectCount === 3) {
+        return {
+          from: () => ({
+            where: () => ({
+              orderBy: () => ({
+                limit: () => ({
+                  offset: () => Promise.resolve([legacySession]),
+                }),
+              }),
+            }),
+          }),
+        } as unknown as ReturnType<typeof db.select>;
+      }
+      return {
+        from: () => ({
+          where: () => Promise.resolve([{ id: legacySession.id }]),
+        }),
+      } as unknown as ReturnType<typeof db.select>;
+    });
+
+    const result = await listSessions(1, 20);
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0].endedAt).toBeNull();
   });
 });
 
