@@ -1,12 +1,60 @@
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Runtime secret generated on first use if SESSION_SECRET is not provided
+// This ensures each process has a unique secret, but sessions won't persist across deployments
+let runtimeSecret: string | null = null;
+let hasWarnedAboutSecret = false;
+
 /**
- * Generate session token from credentials
- * Simple implementation using base64 encoding
+ * Get or generate session secret
+ * In production, SESSION_SECRET should be set for session persistence across edge nodes
+ */
+function getSessionSecret(): string {
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+
+  // Warn once if SESSION_SECRET is not set
+  // In production, this means sessions won't persist across edge nodes
+  if (!hasWarnedAboutSecret) {
+    console.warn(
+      'SESSION_SECRET not set. Using runtime-generated secret. ' +
+        'Sessions will not persist across server restarts or edge nodes. ' +
+        'Set SESSION_SECRET environment variable for production use.'
+    );
+    hasWarnedAboutSecret = true;
+  }
+
+  // Generate a cryptographically secure random secret for this runtime instance
+  if (!runtimeSecret) {
+    runtimeSecret = randomBytes(32).toString('hex');
+  }
+
+  return runtimeSecret;
+}
+
+/**
+ * Generate secure session token using HMAC
+ * Uses cryptographic hash instead of reversible encoding
  */
 function generateSessionToken(user: string, password: string): string {
-  const secret = process.env.SESSION_SECRET || 'basic-auth-session';
-  return Buffer.from(`${user}:${password}:${secret}`).toString('base64');
+  const secret = getSessionSecret();
+  const hmac = createHmac('sha256', secret);
+  hmac.update(`${user}:${password}`);
+  return hmac.digest('hex');
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks
+ */
+function secureCompare(a: string, b: string): boolean {
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    // Different lengths or invalid input
+    return false;
+  }
 }
 
 /**
@@ -36,7 +84,7 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('basic_auth_session');
   if (sessionCookie) {
     const validToken = generateSessionToken(user, password);
-    if (sessionCookie.value === validToken) {
+    if (secureCompare(sessionCookie.value, validToken)) {
       return NextResponse.next(); // Valid session, allow access
     }
     // Invalid session cookie - fall through to Authorization header check
@@ -80,7 +128,12 @@ export function middleware(request: NextRequest) {
       const authUser = decoded.slice(0, colonIndex);
       const authPassword = decoded.slice(colonIndex + 1);
 
-      if (authUser === user && authPassword === password) {
+      // Use constant-time comparison to prevent timing attacks
+      // Both comparisons execute before the conditional check
+      const userMatch = secureCompare(authUser, user);
+      const passwordMatch = secureCompare(authPassword, password);
+
+      if (userMatch && passwordMatch) {
         const response = NextResponse.next();
 
         // Set session cookie for future requests
