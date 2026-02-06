@@ -56,12 +56,12 @@ export function Sidebar() {
             onClick={closeMobile}
           />
         )}
-        {/* Mobile toggle button in header area */}
+        {/* Mobile toggle button aligned within sticky header */}
         <div className='fixed top-2 left-2 z-50 lg:hidden'>
           <Button
             variant='ghost'
             size='icon'
-            className='h-9 w-9 bg-background/80 backdrop-blur shadow-sm border'
+            className='h-9 w-9 border bg-background/80 backdrop-blur shadow-sm'
             onClick={toggleMobile}
             title={mobileOpen ? 'Close sidebar' : 'Open sidebar'}
           >
