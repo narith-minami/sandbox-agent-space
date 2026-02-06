@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Generate a random secret at module load if SESSION_SECRET is not provided
@@ -14,18 +14,17 @@ function getSessionSecret(): string {
     return process.env.SESSION_SECRET;
   }
 
-  // Warn in development if SESSION_SECRET is not set
-  if (process.env.NODE_ENV !== 'production') {
-    console.warn(
-      'SESSION_SECRET not set. Using runtime-generated secret. Sessions will not persist across server restarts.'
-    );
-  }
+  // Warn if SESSION_SECRET is not set
+  // In production, this means sessions won't persist across edge nodes
+  console.warn(
+    'SESSION_SECRET not set. Using runtime-generated secret. ' +
+      'Sessions will not persist across server restarts or edge nodes. ' +
+      'Set SESSION_SECRET environment variable for production use.'
+  );
 
-  // Generate a random secret for this runtime instance
+  // Generate a cryptographically secure random secret for this runtime instance
   if (!runtimeSecret) {
-    runtimeSecret = createHmac('sha256', `${Date.now()}`)
-      .update(Math.random().toString())
-      .digest('hex');
+    runtimeSecret = randomBytes(32).toString('hex');
   }
 
   return runtimeSecret;
