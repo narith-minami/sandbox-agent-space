@@ -1,7 +1,7 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
-// Generate a random secret at module load if SESSION_SECRET is not provided
+// Runtime secret generated on first use if SESSION_SECRET is not provided
 // This ensures each process has a unique secret, but sessions won't persist across deployments
 let runtimeSecret: string | null = null;
 let hasWarnedAboutSecret = false;
@@ -129,12 +129,11 @@ export function middleware(request: NextRequest) {
       const authPassword = decoded.slice(colonIndex + 1);
 
       // Use constant-time comparison to prevent timing attacks
-      // Evaluate both comparisons before checking result to avoid timing leaks
+      // Both comparisons execute before the conditional check
       const userMatch = secureCompare(authUser, user);
       const passwordMatch = secureCompare(authPassword, password);
 
-      // Use bitwise AND to ensure both comparisons complete before branching
-      if ((userMatch ? 1 : 0) & (passwordMatch ? 1 : 0)) {
+      if (userMatch && passwordMatch) {
         const response = NextResponse.next();
 
         // Set session cookie for future requests
