@@ -201,7 +201,7 @@ export function ConfigForm({
                   </>
                 ) : (
                   <>
-                    Start Sandbox
+                    Start<span className='ml-1'>（↑）</span>
                     {selectedRuntime && (
                       <span className='ml-2 text-xs opacity-75'>
                         ({RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label})
