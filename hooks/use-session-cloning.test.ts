@@ -42,7 +42,7 @@ describe('useSessionCloning', () => {
     localStorage.setItem('sandbox_last_repo_slug', 'owner/repo');
     localStorage.setItem('sandbox_last_base_branch', 'main');
     localStorage.setItem('sandbox_last_plan_file', 'docs/plan.md');
-    localStorage.setItem('sandbox_last_model_id', 'claude-3-5-sonnet-20241022');
+    localStorage.setItem('sandbox_last_model_id', 'claude-sonnet-4-5');
     localStorage.setItem('sandbox_last_model_provider', 'anthropic');
 
     const { result } = renderHook(() => useSessionCloning(undefined, false));
@@ -53,7 +53,7 @@ describe('useSessionCloning', () => {
 
     expect(result.current?.planSource).toBe('text');
     expect(result.current?.planFile).toBe('');
-    expect(result.current?.modelId).toBe('claude-3-5-sonnet-20241022');
+    expect(result.current?.modelId).toBe('claude-sonnet-4-5');
     expect(result.current?.modelProvider).toBe('anthropic');
   });
 });

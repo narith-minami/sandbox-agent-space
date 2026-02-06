@@ -41,7 +41,7 @@ export function useSessionCloning(
         snapshotId: config.snapshotId || '',
         enableCodeReview: config.enableCodeReview ?? false,
         modelProvider: config.modelProvider || 'anthropic',
-        modelId: config.modelId || 'claude-3-5-sonnet-20241022',
+        modelId: config.modelId || 'claude-sonnet-4-5',
       });
 
       toast.info('Configuration loaded from previous session', {
@@ -66,7 +66,7 @@ export function useSessionCloning(
         runtime: 'node24',
         snapshotId: '',
         modelProvider: lastUsed.modelProvider || 'anthropic',
-        modelId: lastUsed.modelId || 'claude-3-5-sonnet-20241022',
+        modelId: lastUsed.modelId || 'claude-sonnet-4-5',
       });
     }
   }, [cloneSession, isCloneLoading]);

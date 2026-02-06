@@ -23,7 +23,7 @@ export function createMockSession(overrides: Partial<Session> = {}): Session {
     status: 'pending' as SessionStatus,
     sandboxId: null,
     modelProvider: 'anthropic',
-    modelId: 'claude-3-5-sonnet-20241022',
+    modelId: 'claude-sonnet-4-5',
     prUrl: null,
     prStatus: null,
     memo: null,

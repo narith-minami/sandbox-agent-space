@@ -95,7 +95,7 @@ export function ConfigForm({
         userSettings?.opencodeAuthJsonB64 || commonConfig?.opencodeAuthJsonB64 || '',
       runtime: 'node24',
       modelProvider: 'anthropic',
-      modelId: 'claude-3-5-sonnet-20241022',
+      modelId: 'claude-sonnet-4-5',
       snapshotId: '',
       enableCodeReview: userSettings?.enableCodeReview ?? false,
       ...defaultValues,

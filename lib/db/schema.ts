@@ -10,7 +10,7 @@ export const sessions = pgTable('sessions', {
   config: jsonb('config').$type<SandboxConfig>().notNull(),
   runtime: text('runtime').$type<SandboxRuntime>().notNull().default('node24'),
   modelProvider: text('model_provider').default('anthropic'),
-  modelId: text('model_id').default('claude-3-5-sonnet-20241022'),
+  modelId: text('model_id').default('claude-sonnet-4-5'),
   prUrl: text('pr_url'), // Pull Request URL
   prStatus: text('pr_status').$type<PrStatus>(), // Pull Request status
   memo: text('memo'), // Optional memo/notes

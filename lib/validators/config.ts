@@ -114,9 +114,9 @@ export const SandboxConfigSchema = z
     // New: runtime selection (optional, defaults to node24)
     runtime: SandboxRuntimeSchema.optional().default('node24'),
 
-    // New: AI model selection (optional, defaults to Claude 3.5 Sonnet)
+    // New: AI model selection (optional, defaults to Claude Sonnet 4.5 / OpenCode default)
     modelProvider: z.string().default('anthropic'),
-    modelId: z.string().default('claude-3-5-sonnet-20241022'),
+    modelId: z.string().default('claude-sonnet-4-5'),
 
     // New: optional snapshot ID to create from
     snapshotId: z.string().optional(),
