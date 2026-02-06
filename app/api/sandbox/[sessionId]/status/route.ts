@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/db/queries';
+import { getSession, updateSession } from '@/lib/db/queries';
 import { getSandboxManager } from '@/lib/sandbox/manager';
+import { isTerminalStatus, mapVercelStatus } from '@/lib/sandbox/status-mapper';
 import { validateUUID } from '@/lib/validators/config';
 import type { ApiError, SandboxStatusResponse } from '@/types/sandbox';
 
@@ -48,9 +49,22 @@ export async function GET(_request: Request, { params }: RouteParams) {
         const status = await sandboxManager.getSandboxStatus(session.sandboxId);
         vercelStatus = status.vercelStatus;
         timeout = status.timeout;
+
+        // If Vercel sandbox is in a terminal state but DB session is not, update DB
+        if (vercelStatus) {
+          const mappedStatus = mapVercelStatus(vercelStatus);
+          if (isTerminalStatus(mappedStatus) && !isTerminalStatus(session.status)) {
+            await updateSession(session.id, { status: mappedStatus });
+            session.status = mappedStatus;
+          }
+        }
       } catch {
-        // Sandbox might have stopped or been deleted
+        // Sandbox might have stopped or been deleted - mark as completed
         vercelStatus = undefined;
+        if (!isTerminalStatus(session.status)) {
+          await updateSession(session.id, { status: 'completed' });
+          session.status = 'completed';
+        }
       }
     }
 

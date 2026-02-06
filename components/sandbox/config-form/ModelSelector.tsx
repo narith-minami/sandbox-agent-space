@@ -9,7 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ANTHROPIC_MODELS, type ModelConfig, OPENAI_MODELS } from '@/lib/constants/models';
+import {
+  ANTHROPIC_MODELS,
+  GOOGLE_MODELS,
+  type ModelConfig,
+  OPENAI_MODELS,
+} from '@/lib/constants/models';
 import type { SandboxConfigFormData } from '../config-form';
 
 interface ModelSelectorProps {
@@ -41,6 +46,11 @@ export function ModelSelector({ control, variant = 'cards' }: ModelSelectorProps
                       {model.label}
                     </SelectItem>
                   ))}
+                  {GOOGLE_MODELS.map((model) => (
+                    <SelectItem key={model.modelId} value={model.modelId}>
+                      {model.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             ) : (
@@ -67,6 +77,23 @@ export function ModelSelector({ control, variant = 'cards' }: ModelSelectorProps
                   <div className='text-xs font-medium text-muted-foreground mb-2'>OpenAI GPT</div>
                   <div className='grid grid-cols-1 gap-2'>
                     {OPENAI_MODELS.map((model) => (
+                      <ModelButton
+                        key={model.modelId}
+                        model={model}
+                        selected={field.value === model.modelId}
+                        onClick={() => field.onChange(model.modelId)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Google Models */}
+                <div>
+                  <div className='text-xs font-medium text-muted-foreground mb-2'>
+                    Google Gemini
+                  </div>
+                  <div className='grid grid-cols-1 gap-2'>
+                    {GOOGLE_MODELS.map((model) => (
                       <ModelButton
                         key={model.modelId}
                         model={model}

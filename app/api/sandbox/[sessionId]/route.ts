@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getSessionWithLogs } from '@/lib/db/queries';
+import { getSessionWithLogs, updateSession } from '@/lib/db/queries';
+import { getSandboxManager } from '@/lib/sandbox/manager';
+import { isTerminalStatus, mapVercelStatus } from '@/lib/sandbox/status-mapper';
 import { validateUUID } from '@/lib/validators/config';
 import type { ApiError, SandboxSessionWithLogs } from '@/types/sandbox';
 
@@ -37,17 +39,45 @@ export async function GET(_request: Request, { params }: RouteParams) {
       );
     }
 
+    // Check if sandbox status needs to be synced with DB
+    let { session } = result;
+    if (session.sandboxId && (session.status === 'running' || session.status === 'pending')) {
+      try {
+        const sandboxManager = getSandboxManager();
+        const status = await sandboxManager.getSandboxStatus(session.sandboxId);
+
+        // If Vercel sandbox is in a terminal state but DB session is not, update DB
+        if (status.vercelStatus) {
+          const mappedStatus = mapVercelStatus(status.vercelStatus);
+          if (isTerminalStatus(mappedStatus) && !isTerminalStatus(session.status)) {
+            const updatedSession = await updateSession(session.id, { status: mappedStatus });
+            if (updatedSession) {
+              session = updatedSession;
+            }
+          }
+        }
+      } catch {
+        // Sandbox might have stopped or been deleted - mark as completed
+        if (!isTerminalStatus(session.status)) {
+          const updatedSession = await updateSession(session.id, { status: 'completed' });
+          if (updatedSession) {
+            session = updatedSession;
+          }
+        }
+      }
+    }
+
     const response: SandboxSessionWithLogs = {
-      id: result.session.id,
-      sandboxId: result.session.sandboxId,
-      status: result.session.status,
-      config: result.session.config,
-      runtime: result.session.runtime,
-      prUrl: result.session.prUrl,
-      prStatus: result.session.prStatus,
-      memo: result.session.memo,
-      createdAt: result.session.createdAt,
-      updatedAt: result.session.updatedAt,
+      id: session.id,
+      sandboxId: session.sandboxId,
+      status: session.status,
+      config: session.config,
+      runtime: session.runtime,
+      prUrl: session.prUrl,
+      prStatus: session.prStatus,
+      memo: session.memo,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
       logs: result.logs.map((log) => ({
         id: log.id,
         sessionId: log.sessionId,

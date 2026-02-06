@@ -178,7 +178,7 @@ export class SandboxConfigBuilder {
   ): SandboxEnvironment {
     // Get model configuration with fallbacks
     const modelProvider = config.modelProvider || process.env.COMMON_MODEL_PROVIDER || 'anthropic';
-    const modelId = config.modelId || process.env.COMMON_MODEL_ID || 'claude-3-5-sonnet-20241022';
+    const modelId = config.modelId || process.env.COMMON_MODEL_ID || 'claude-sonnet-4-5';
 
     const env: SandboxEnvironment = {
       GITHUB_TOKEN: githubToken,

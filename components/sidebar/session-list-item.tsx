@@ -116,10 +116,14 @@ export function SessionListItem({
   const truncatedRepoSlug = truncateRepoSlug(repoSlug);
   const formattedDate = formatSessionDate(session.createdAt);
   const prNumber = extractPrNumber(session.prUrl);
-  const duration = calculateSessionDuration(
-    new Date(session.createdAt),
-    session.endedAt ? new Date(session.endedAt) : null
-  );
+  // Show duration if session has ended, or if it's currently running
+  const shouldShowDuration = session.endedAt || session.status === 'running';
+  const duration = shouldShowDuration
+    ? calculateSessionDuration(
+        new Date(session.createdAt),
+        session.endedAt ? new Date(session.endedAt) : null
+      )
+    : null;
   const [isHovered, setIsHovered] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
 
@@ -195,7 +199,9 @@ export function SessionListItem({
                 <span className={cn('h-2 w-2 rounded-full', config.dotClassName)} />
                 <span className='text-muted-foreground/70'>{formattedDate}</span>
               </span>
-              <span className='font-semibold text-muted-foreground/70'>({duration})</span>
+              {duration && (
+                <span className='font-semibold text-muted-foreground/70'>({duration})</span>
+              )}
               {session.prStatus && <PrStatusBadge status={session.prStatus} compact={false} />}
               {prNumber && (
                 <span className='text-xs font-medium text-muted-foreground/70'>{prNumber}</span>
