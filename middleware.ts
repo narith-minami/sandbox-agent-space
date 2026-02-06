@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 // Generate a random secret at module load if SESSION_SECRET is not provided
 // This ensures each process has a unique secret, but sessions won't persist across deployments
 let runtimeSecret: string | null = null;
+let hasWarnedAboutSecret = false;
 
 /**
  * Get or generate session secret
@@ -14,13 +15,16 @@ function getSessionSecret(): string {
     return process.env.SESSION_SECRET;
   }
 
-  // Warn if SESSION_SECRET is not set
+  // Warn once if SESSION_SECRET is not set
   // In production, this means sessions won't persist across edge nodes
-  console.warn(
-    'SESSION_SECRET not set. Using runtime-generated secret. ' +
-      'Sessions will not persist across server restarts or edge nodes. ' +
-      'Set SESSION_SECRET environment variable for production use.'
-  );
+  if (!hasWarnedAboutSecret) {
+    console.warn(
+      'SESSION_SECRET not set. Using runtime-generated secret. ' +
+        'Sessions will not persist across server restarts or edge nodes. ' +
+        'Set SESSION_SECRET environment variable for production use.'
+    );
+    hasWarnedAboutSecret = true;
+  }
 
   // Generate a cryptographically secure random secret for this runtime instance
   if (!runtimeSecret) {
@@ -125,10 +129,12 @@ export function middleware(request: NextRequest) {
       const authPassword = decoded.slice(colonIndex + 1);
 
       // Use constant-time comparison to prevent timing attacks
+      // Evaluate both comparisons before checking result to avoid timing leaks
       const userMatch = secureCompare(authUser, user);
       const passwordMatch = secureCompare(authPassword, password);
 
-      if (userMatch && passwordMatch) {
+      // Use bitwise AND to ensure both comparisons complete before branching
+      if ((userMatch ? 1 : 0) & (passwordMatch ? 1 : 0)) {
         const response = NextResponse.next();
 
         // Set session cookie for future requests
