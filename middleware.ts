@@ -1,4 +1,3 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
 // Runtime secret generated on first use if SESSION_SECRET is not provided
@@ -28,33 +27,62 @@ function getSessionSecret(): string {
 
   // Generate a cryptographically secure random secret for this runtime instance
   if (!runtimeSecret) {
-    runtimeSecret = randomBytes(32).toString('hex');
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    runtimeSecret = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
   return runtimeSecret;
 }
 
 /**
- * Generate secure session token using HMAC
+ * Generate secure session token using HMAC (Web Crypto API)
  * Uses cryptographic hash instead of reversible encoding
  */
-function generateSessionToken(user: string, password: string): string {
+async function generateSessionToken(user: string, password: string): Promise<string> {
   const secret = getSessionSecret();
-  const hmac = createHmac('sha256', secret);
-  hmac.update(`${user}:${password}`);
-  return hmac.digest('hex');
+  const encoder = new TextEncoder();
+
+  // Import the secret as a key
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  // Sign the user:password combination
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`${user}:${password}`));
+
+  // Convert to hex string
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, '0')).join(
+    ''
+  );
 }
 
 /**
  * Constant-time string comparison to prevent timing attacks
+ * Uses Web Crypto API's subtle.timingSafeEqual when available
  */
 function secureCompare(a: string, b: string): boolean {
-  try {
-    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  } catch {
-    // Different lengths or invalid input
+  // Different lengths cannot be equal
+  if (a.length !== b.length) {
     return false;
   }
+
+  // Convert strings to Uint8Array for comparison
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+
+  // Perform constant-time comparison
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+
+  return result === 0;
 }
 
 /**
@@ -71,7 +99,7 @@ function secureCompare(a: string, b: string): boolean {
  * 認証成功後、セッションCookieを設定することで、以降のリクエストでは
  * Authorizationヘッダーを要求せず、Cookieによる認証を行います。
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const user = process.env.BASIC_AUTH_USER;
   const password = process.env.BASIC_AUTH_PASSWORD;
 
@@ -83,7 +111,7 @@ export function middleware(request: NextRequest) {
   // Check for existing session cookie first
   const sessionCookie = request.cookies.get('basic_auth_session');
   if (sessionCookie) {
-    const validToken = generateSessionToken(user, password);
+    const validToken = await generateSessionToken(user, password);
     if (secureCompare(sessionCookie.value, validToken)) {
       return NextResponse.next(); // Valid session, allow access
     }
@@ -109,7 +137,7 @@ export function middleware(request: NextRequest) {
         );
       }
 
-      const decoded = Buffer.from(authValue, 'base64').toString('utf-8');
+      const decoded = atob(authValue);
       const colonIndex = decoded.indexOf(':');
 
       if (colonIndex === -1) {
@@ -137,7 +165,8 @@ export function middleware(request: NextRequest) {
         const response = NextResponse.next();
 
         // Set session cookie for future requests
-        response.cookies.set('basic_auth_session', generateSessionToken(user, password), {
+        const token = await generateSessionToken(user, password);
+        response.cookies.set('basic_auth_session', token, {
           httpOnly: true,
           maxAge: 28800, // 8 hours
           path: '/',
