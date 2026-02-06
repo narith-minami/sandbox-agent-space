@@ -1,12 +1,29 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
- * Generate session token from credentials
- * Simple implementation using base64 encoding
+ * Generate secure session token using HMAC
+ * Uses cryptographic hash instead of reversible encoding
  */
 function generateSessionToken(user: string, password: string): string {
   const secret = process.env.SESSION_SECRET || 'basic-auth-session';
-  return Buffer.from(`${user}:${password}:${secret}`).toString('base64');
+  const hmac = createHmac('sha256', secret);
+  hmac.update(`${user}:${password}`);
+  return hmac.digest('hex');
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks
+ */
+function secureCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -36,7 +53,7 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('basic_auth_session');
   if (sessionCookie) {
     const validToken = generateSessionToken(user, password);
-    if (sessionCookie.value === validToken) {
+    if (secureCompare(sessionCookie.value, validToken)) {
       return NextResponse.next(); // Valid session, allow access
     }
     // Invalid session cookie - fall through to Authorization header check
@@ -80,7 +97,11 @@ export function middleware(request: NextRequest) {
       const authUser = decoded.slice(0, colonIndex);
       const authPassword = decoded.slice(colonIndex + 1);
 
-      if (authUser === user && authPassword === password) {
+      // Use constant-time comparison to prevent timing attacks
+      const userMatch = secureCompare(authUser, user);
+      const passwordMatch = secureCompare(authPassword, password);
+
+      if (userMatch && passwordMatch) {
         const response = NextResponse.next();
 
         // Set session cookie for future requests
