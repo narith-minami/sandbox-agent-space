@@ -314,6 +314,7 @@ describe('SandboxManager', () => {
         archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        endedAt: null,
       });
       vi.mocked(Sandbox.get).mockResolvedValue(mockSandbox as never);
 
@@ -396,6 +397,7 @@ describe('SandboxManager', () => {
         archived: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        endedAt: null,
       });
 
       const entries: string[] = [];

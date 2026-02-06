@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from './client';
-import { type Log, logs, type Session, sessions } from './schema';
+import { type Log, logs, type Session } from './schema';
+import { getSession } from './session-queries';
 
 export * from './log-queries';
 export * from './preset-queries';
@@ -18,7 +19,7 @@ export * from './user-settings-queries';
 export async function getSessionWithLogs(
   sessionId: string
 ): Promise<{ session: Session; logs: Log[] } | undefined> {
-  const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+  const session = await getSession(sessionId);
 
   if (!session) return undefined;
 

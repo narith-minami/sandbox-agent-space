@@ -136,6 +136,7 @@ export function createMockDatabase(
     insert: createMockInsert(defaults.insertData),
     update: createMockUpdate(defaults.updateData),
     delete: createMockDelete(),
+    execute: vi.fn().mockResolvedValue({ rows: [] }),
   };
 }
 
@@ -221,4 +222,5 @@ export function resetDatabaseMocks(db: ReturnType<typeof createMockDatabase>) {
   vi.mocked(db.insert).mockClear();
   vi.mocked(db.update).mockClear();
   vi.mocked(db.delete).mockClear();
+  vi.mocked(db.execute).mockClear();
 }
