@@ -1,14 +1,27 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 /**
+ * Generate session token from credentials
+ * Simple implementation using base64 encoding
+ */
+function generateSessionToken(user: string, password: string): string {
+  const secret = process.env.SESSION_SECRET || 'basic-auth-session';
+  return Buffer.from(`${user}:${password}:${secret}`).toString('base64');
+}
+
+/**
  * Basic認証をチェックするMiddleware
  *
  * 環境変数:
  * - BASIC_AUTH_USER: ユーザー名
  * - BASIC_AUTH_PASSWORD: パスワード
+ * - SESSION_SECRET: セッショントークン生成用のシークレット（オプション）
  *
  * 両方の環境変数が設定されている場合のみBasic認証が有効になります。
  * ローカル開発時や認証不要な環境では環境変数を設定しないことで認証をスキップできます。
+ *
+ * 認証成功後、セッションCookieを設定することで、以降のリクエストでは
+ * Authorizationヘッダーを要求せず、Cookieによる認証を行います。
  */
 export function middleware(request: NextRequest) {
   const user = process.env.BASIC_AUTH_USER;
@@ -19,6 +32,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Check for existing session cookie first
+  const sessionCookie = request.cookies.get('basic_auth_session');
+  if (sessionCookie) {
+    const validToken = generateSessionToken(user, password);
+    if (sessionCookie.value === validToken) {
+      return NextResponse.next(); // Valid session, allow access
+    }
+    // Invalid session cookie - fall through to Authorization header check
+  }
+
+  // Check Authorization header
   const authHeader = request.headers.get('authorization');
 
   if (authHeader) {
@@ -57,7 +81,18 @@ export function middleware(request: NextRequest) {
       const authPassword = decoded.slice(colonIndex + 1);
 
       if (authUser === user && authPassword === password) {
-        return NextResponse.next();
+        const response = NextResponse.next();
+
+        // Set session cookie for future requests
+        response.cookies.set('basic_auth_session', generateSessionToken(user, password), {
+          httpOnly: true,
+          maxAge: 28800, // 8 hours
+          path: '/',
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        });
+
+        return response;
       }
     } catch (error) {
       console.error('Error parsing basic auth header:', error);
