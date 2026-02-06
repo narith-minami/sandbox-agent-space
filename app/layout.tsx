@@ -36,7 +36,7 @@ export default function RootLayout({
           <ServiceWorkerRegistration />
           <div className='min-h-screen bg-background flex flex-col'>
             <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
-              <div className='container flex h-14 items-center justify-between px-4 mx-auto'>
+              <div className='container flex h-14 items-center justify-between pr-4 pl-14 mx-auto lg:px-4'>
                 <Link href='/' className='mr-6 flex items-center space-x-2'>
                   <span className='font-bold'>Coding Sandbox</span>
                 </Link>
