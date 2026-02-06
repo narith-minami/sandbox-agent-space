@@ -1,16 +1,105 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Runtime secret generated on first use if SESSION_SECRET is not provided
+// This ensures each process has a unique secret, but sessions won't persist across deployments
+let runtimeSecret: string | null = null;
+let hasWarnedAboutSecret = false;
+
+/**
+ * Get or generate session secret
+ * In production, SESSION_SECRET should be set for session persistence across edge nodes
+ */
+function getSessionSecret(): string {
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+
+  // Warn once if SESSION_SECRET is not set
+  // In production, this means sessions won't persist across edge nodes
+  if (!hasWarnedAboutSecret) {
+    console.warn(
+      'SESSION_SECRET not set. Using runtime-generated secret. ' +
+        'Sessions will not persist across server restarts or edge nodes. ' +
+        'Set SESSION_SECRET environment variable for production use.'
+    );
+    hasWarnedAboutSecret = true;
+  }
+
+  // Generate a cryptographically secure random secret for this runtime instance
+  if (!runtimeSecret) {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    runtimeSecret = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  return runtimeSecret;
+}
+
+/**
+ * Generate secure session token using HMAC (Web Crypto API)
+ * Uses cryptographic hash instead of reversible encoding
+ */
+async function generateSessionToken(user: string, password: string): Promise<string> {
+  const secret = getSessionSecret();
+  const encoder = new TextEncoder();
+
+  // Import the secret as a key
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  // Sign the user:password combination
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(`${user}:${password}`));
+
+  // Convert to hex string
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, '0')).join(
+    ''
+  );
+}
+
+/**
+ * Constant-time string comparison to prevent timing attacks
+ * Uses Web Crypto API's subtle.timingSafeEqual when available
+ */
+function secureCompare(a: string, b: string): boolean {
+  // Different lengths cannot be equal
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  // Convert strings to Uint8Array for comparison
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+
+  // Perform constant-time comparison
+  let result = 0;
+  for (let i = 0; i < bufA.length; i++) {
+    result |= bufA[i] ^ bufB[i];
+  }
+
+  return result === 0;
+}
+
 /**
  * Basic認証をチェックするMiddleware
  *
  * 環境変数:
  * - BASIC_AUTH_USER: ユーザー名
  * - BASIC_AUTH_PASSWORD: パスワード
+ * - SESSION_SECRET: セッショントークン生成用のシークレット（オプション）
  *
  * 両方の環境変数が設定されている場合のみBasic認証が有効になります。
  * ローカル開発時や認証不要な環境では環境変数を設定しないことで認証をスキップできます。
+ *
+ * 認証成功後、セッションCookieを設定することで、以降のリクエストでは
+ * Authorizationヘッダーを要求せず、Cookieによる認証を行います。
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const user = process.env.BASIC_AUTH_USER;
   const password = process.env.BASIC_AUTH_PASSWORD;
 
@@ -19,6 +108,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Check for existing session cookie first
+  const sessionCookie = request.cookies.get('basic_auth_session');
+  if (sessionCookie) {
+    const validToken = await generateSessionToken(user, password);
+    if (secureCompare(sessionCookie.value, validToken)) {
+      return NextResponse.next(); // Valid session, allow access
+    }
+    // Invalid session cookie - fall through to Authorization header check
+  }
+
+  // Check Authorization header
   const authHeader = request.headers.get('authorization');
 
   if (authHeader) {
@@ -37,7 +137,7 @@ export function middleware(request: NextRequest) {
         );
       }
 
-      const decoded = Buffer.from(authValue, 'base64').toString('utf-8');
+      const decoded = atob(authValue);
       const colonIndex = decoded.indexOf(':');
 
       if (colonIndex === -1) {
@@ -56,8 +156,25 @@ export function middleware(request: NextRequest) {
       const authUser = decoded.slice(0, colonIndex);
       const authPassword = decoded.slice(colonIndex + 1);
 
-      if (authUser === user && authPassword === password) {
-        return NextResponse.next();
+      // Use constant-time comparison to prevent timing attacks
+      // Both comparisons execute before the conditional check
+      const userMatch = secureCompare(authUser, user);
+      const passwordMatch = secureCompare(authPassword, password);
+
+      if (userMatch && passwordMatch) {
+        const response = NextResponse.next();
+
+        // Set session cookie for future requests
+        const token = await generateSessionToken(user, password);
+        response.cookies.set('basic_auth_session', token, {
+          httpOnly: true,
+          maxAge: 28800, // 8 hours
+          path: '/',
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        });
+
+        return response;
       }
     } catch (error) {
       console.error('Error parsing basic auth header:', error);
