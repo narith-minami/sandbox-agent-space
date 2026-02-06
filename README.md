@@ -13,7 +13,10 @@ A Next.js 16 application that manages **Vercel Sandbox SDK** integration for run
 - 💾 **LocalStorage Persistence** - Remember last used repository settings
 - 🎯 **Multiple Runtimes** - Support for Node.js 24, Node.js 22, Python 3.13
 - ⏱️ **Configurable Timeout** - Default 10 minutes, configurable up to 45 minutes
-- 🧪 **Comprehensive Testing** - 332 tests with 91%+ coverage
+- 🤖 **AI Model Configuration** - Configurable AI provider and model (Anthropic, OpenAI, Gemini)
+- 🔒 **Basic Authentication** - Optional password protection for production deployments
+- 📦 **Session Archiving** - Archive completed sessions to reduce clutter
+- 🧪 **Comprehensive Testing** - Unit tests with Vitest covering core functionality
 - 🔧 **Test Helpers** - Shared utilities for reducing test duplication
 
 ## Getting Started
@@ -47,6 +50,8 @@ Edit `.env.local` and configure:
 - `COMMON_GITHUB_TOKEN` (optional) - Default GitHub token
 - `COMMON_OPENCODE_AUTH_JSON_B64` (optional) - Default OpenCode auth
 - `COMMON_GIST_URL` (optional) - Default Gist script URL
+- `COMMON_MODEL_PROVIDER` (optional) - AI model provider
+- `COMMON_MODEL_ID` (optional) - AI model ID
 
 4. Set up Vercel authentication (required for sandbox creation):
 
@@ -86,6 +91,13 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 - `COMMON_GITHUB_TOKEN` - Default GitHub personal access token
 - `COMMON_OPENCODE_AUTH_JSON_B64` - Default OpenCode authentication (base64-encoded JSON)
 - `COMMON_GIST_URL` - Default Gist script URL
+- `COMMON_MODEL_PROVIDER` - AI model provider: `anthropic`, `openai`, or `gemini` (default: anthropic)
+- `COMMON_MODEL_ID` - AI model ID (default: claude-3-5-sonnet-20241022)
+- `COMMON_ANTHROPIC_API_KEY` - Anthropic API key for AI-powered workflows
+- `COMMON_OPENAI_API_KEY` - OpenAI API key for AI-powered workflows
+- `COMMON_GEMINI_API_KEY` - Google Gemini API key for AI-powered workflows
+- `BASIC_AUTH_USER` - Basic auth username (both user and password required to enable)
+- `BASIC_AUTH_PASSWORD` - Basic auth password
 - `RATE_LIMIT_REQUESTS_PER_MINUTE` - API rate limit (default: 10)
 
 See `.env.example` for detailed configuration options.
@@ -101,6 +113,8 @@ To avoid entering credentials every time, set environment variables:
 COMMON_GITHUB_TOKEN="ghp_your_token_here"
 COMMON_OPENCODE_AUTH_JSON_B64="eyJ..."
 COMMON_GIST_URL="https://gist.githubusercontent.com/user/id/raw/script.sh"
+COMMON_MODEL_PROVIDER="anthropic"
+COMMON_MODEL_ID="claude-3-5-sonnet-20241022"
 ```
 
 With common config set, the form will:
@@ -116,9 +130,11 @@ With common config set, the form will:
    - **Gist URL**: Script to execute (uses common config if set)
    - **Repository**: GitHub repo to clone (remembered from last use)
    - **Directory**: Working directory (default: `frontend`)
+   - **Model Provider & ID**: AI model configuration for agent tasks
    - **Credentials**: GitHub token and OpenCode auth (uses common config if set)
 3. Click "Start Sandbox"
 4. Watch real-time logs as the sandbox executes
+5. Optionally archive completed sessions from the history page
 
 ### Cloning a Session
 
@@ -163,6 +179,8 @@ pnpm run db:studio
 
 ### Sessions & Snapshots
 - `GET /api/sessions` - List all sessions (paginated)
+- `POST /api/sessions/{sessionId}/archive` - Archive a session
+- `POST /api/sessions/{sessionId}/unarchive` - Unarchive a session
 - `GET /api/snapshots` - List all snapshots
 - `GET /api/snapshots/{snapshotId}` - Get snapshot details
 - `DELETE /api/snapshots/{snapshotId}` - Delete snapshot
@@ -173,13 +191,15 @@ pnpm run db:studio
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
+- **Language**: TypeScript 5
 - **Database**: PostgreSQL with Drizzle ORM
-- **UI**: React, TailwindCSS, shadcn/ui
+- **UI**: React 19, Tailwind CSS 4, shadcn/ui
 - **State Management**: TanStack Query (React Query)
 - **Sandbox**: Vercel Sandbox SDK (@vercel/sandbox)
-- **Authentication**: Vercel OIDC Token
+- **Authentication**: Vercel OIDC Token / Basic Auth
 - **Validation**: Zod
+- **Testing**: Vitest + Testing Library
+- **Linting/Formatting**: Biome
 
 ## Project Structure
 
@@ -188,6 +208,8 @@ pnpm run db:studio
  │   ├── api/              # API routes
  │   ├── sandbox/          # Sandbox pages
  │   ├── history/          # Session history
+ │   ├── settings/         # Settings page
+ │   ├── login/            # Login page (Basic Auth)
  │   └── ...
  ├── components/
  │   ├── sandbox/          # Sandbox-specific components
@@ -197,7 +219,9 @@ pnpm run db:studio
 │   ├── api/              # API utilities (validators, config builders)
 │   ├── db/               # Database schema & queries
 │   ├── sandbox/          # Sandbox manager & services
-│   └── storage.ts        # LocalStorage utilities
+│   ├── storage.ts        # LocalStorage utilities
+│   ├── rate-limit.ts     # API rate limiting
+│   └── notifications.ts  # Toast notification service
  ├── test/
  │   ├── helpers/          # Shared test utilities
  │   └── setup.ts          # Vitest global setup
@@ -229,6 +253,19 @@ Every session can be cloned with one click:
 - Preserves all non-sensitive configuration
 - Auto-fills form with previous values
 - Ready to modify and re-run
+
+### Session Archiving
+Keep your workspace organized:
+- Archive completed sessions from the history page
+- Archived sessions are hidden by default
+- Easy to unarchive when needed
+
+### Basic Authentication
+Protect your deployment with optional Basic Auth:
+- Set `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` environment variables
+- Both values must be set to enable authentication
+- Login page appears when authentication is enabled
+- Sessions are maintained in localStorage
 
 ## Development
 
@@ -289,6 +326,10 @@ See `.github/workflows/ci.yml` for the full configuration.
    - `COMMON_GITHUB_TOKEN` (optional)
    - `COMMON_OPENCODE_AUTH_JSON_B64` (optional)
    - `COMMON_GIST_URL` (optional)
+   - `COMMON_MODEL_PROVIDER` (optional)
+   - `COMMON_MODEL_ID` (optional)
+   - `BASIC_AUTH_USER` (optional, for password protection)
+   - `BASIC_AUTH_PASSWORD` (optional, for password protection)
 4. Deploy!
 
 `VERCEL_OIDC_TOKEN` is automatically set by Vercel in production.
