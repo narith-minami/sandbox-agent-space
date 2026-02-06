@@ -201,7 +201,7 @@ export function ConfigForm({
                   </>
                 ) : (
                   <>
-                    Start<span className='ml-1'>（↑）</span>
+                    <span className="inline-flex items-center">Start <ArrowUp className="ml-1 h-4 w-4" /></span>
                     {selectedRuntime && (
                       <span className='ml-2 text-xs opacity-75'>
                         ({RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label})
