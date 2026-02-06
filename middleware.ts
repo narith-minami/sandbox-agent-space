@@ -1,12 +1,42 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 
+// Generate a random secret at module load if SESSION_SECRET is not provided
+// This ensures each process has a unique secret, but sessions won't persist across deployments
+let runtimeSecret: string | null = null;
+
+/**
+ * Get or generate session secret
+ * In production, SESSION_SECRET should be set for session persistence across edge nodes
+ */
+function getSessionSecret(): string {
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+
+  // Warn in development if SESSION_SECRET is not set
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      'SESSION_SECRET not set. Using runtime-generated secret. Sessions will not persist across server restarts.'
+    );
+  }
+
+  // Generate a random secret for this runtime instance
+  if (!runtimeSecret) {
+    runtimeSecret = createHmac('sha256', `${Date.now()}`)
+      .update(Math.random().toString())
+      .digest('hex');
+  }
+
+  return runtimeSecret;
+}
+
 /**
  * Generate secure session token using HMAC
  * Uses cryptographic hash instead of reversible encoding
  */
 function generateSessionToken(user: string, password: string): string {
-  const secret = process.env.SESSION_SECRET || 'basic-auth-session';
+  const secret = getSessionSecret();
   const hmac = createHmac('sha256', secret);
   hmac.update(`${user}:${password}`);
   return hmac.digest('hex');
@@ -16,12 +46,10 @@ function generateSessionToken(user: string, password: string): string {
  * Constant-time string comparison to prevent timing attacks
  */
 function secureCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
   try {
     return timingSafeEqual(Buffer.from(a), Buffer.from(b));
   } catch {
+    // Different lengths or invalid input
     return false;
   }
 }
