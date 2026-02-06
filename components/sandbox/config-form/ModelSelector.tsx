@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/select';
 import {
   ANTHROPIC_MODELS,
-  type ModelConfig,
   GOOGLE_MODELS,
+  type ModelConfig,
   OPENAI_MODELS,
 } from '@/lib/constants/models';
 import type { SandboxConfigFormData } from '../config-form';
