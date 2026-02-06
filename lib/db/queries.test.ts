@@ -20,11 +20,11 @@ import {
   getSnapshotsBySessionId,
   listSessions,
   listSnapshotRecords,
+  resetSessionSchemaCacheForTests,
   setSessionSandboxId,
   setSessionStatus,
   updateSession,
   updateSnapshotStatus,
-  resetSessionSchemaCacheForTests,
 } from './queries';
 import type { Log, Session, SnapshotRecord } from './schema';
 
@@ -35,9 +35,9 @@ beforeEach(async () => {
   const { db } = await import('./client');
   vi.clearAllMocks();
   resetSessionSchemaCacheForTests();
-  vi.mocked(db.execute).mockResolvedValue(
-    { rows: [{ found: 1 }] } as unknown as Awaited<ReturnType<typeof db.execute>>
-  );
+  vi.mocked(db.execute).mockResolvedValue({ rows: [{ found: 1 }] } as unknown as Awaited<
+    ReturnType<typeof db.execute>
+  >);
 });
 
 describe('createSession', () => {
@@ -122,30 +122,28 @@ describe('createSession', () => {
     const now = new Date();
     vi.mocked(db.execute)
       .mockResolvedValueOnce({ rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>)
-      .mockResolvedValueOnce(
-        {
-          rows: [
-            {
-              id: '550e8400-e29b-41d4-a716-446655440000',
-              sandbox_id: null,
-              status: 'pending',
-              config: {
-                planSource: 'file',
-                planFile: 'plan.md',
-              },
-              runtime: 'node24',
-              model_provider: 'anthropic',
-              model_id: 'claude-3-5-sonnet-20241022',
-              pr_url: null,
-              pr_status: null,
-              memo: null,
-              archived: false,
-              created_at: now,
-              updated_at: now,
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            sandbox_id: null,
+            status: 'pending',
+            config: {
+              planSource: 'file',
+              planFile: 'plan.md',
             },
-          ],
-        } as unknown as Awaited<ReturnType<typeof db.execute>>
-      );
+            runtime: 'node24',
+            model_provider: 'anthropic',
+            model_id: 'claude-3-5-sonnet-20241022',
+            pr_url: null,
+            pr_status: null,
+            memo: null,
+            archived: false,
+            created_at: now,
+            updated_at: now,
+          },
+        ],
+      } as unknown as Awaited<ReturnType<typeof db.execute>>);
 
     const result = await createSession({
       planSource: 'file',
@@ -353,9 +351,9 @@ describe('updateSession', () => {
     const mockSession = createMockSession({ status: 'completed' as SessionStatus });
 
     const { db } = await import('./client');
-    vi.mocked(db.execute).mockResolvedValue(
-      { rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>
-    );
+    vi.mocked(db.execute).mockResolvedValue({ rows: [] } as unknown as Awaited<
+      ReturnType<typeof db.execute>
+    >);
     vi.mocked(db.update).mockImplementation(
       () =>
         ({
@@ -581,9 +579,9 @@ describe('listSessions', () => {
     };
 
     const { db } = await import('./client');
-    vi.mocked(db.execute).mockResolvedValue(
-      { rows: [] } as unknown as Awaited<ReturnType<typeof db.execute>>
-    );
+    vi.mocked(db.execute).mockResolvedValue({ rows: [] } as unknown as Awaited<
+      ReturnType<typeof db.execute>
+    >);
     let selectCount = 0;
     vi.mocked(db.select).mockImplementation(() => {
       selectCount++;

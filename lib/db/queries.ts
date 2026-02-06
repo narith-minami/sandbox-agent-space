@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from './client';
-import { getSession } from './session-queries';
 import { type Log, logs, type Session } from './schema';
+import { getSession } from './session-queries';
 
 export * from './log-queries';
 export * from './preset-queries';
