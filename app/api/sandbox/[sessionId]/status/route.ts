@@ -54,16 +54,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
         if (vercelStatus) {
           const mappedStatus = mapVercelStatus(vercelStatus);
           if (isTerminalStatus(mappedStatus) && !isTerminalStatus(session.status)) {
-            await updateSession(session.id, { status: mappedStatus });
-            session.status = mappedStatus;
+            const updatedSession = await updateSession(session.id, { status: mappedStatus });
+            if (updatedSession) {
+              Object.assign(session, updatedSession);
+            }
           }
         }
       } catch {
         // Sandbox might have stopped or been deleted - mark as completed
         vercelStatus = undefined;
         if (!isTerminalStatus(session.status)) {
-          await updateSession(session.id, { status: 'completed' });
-          session.status = 'completed';
+          const updatedSession = await updateSession(session.id, { status: 'completed' });
+          if (updatedSession) {
+            Object.assign(session, updatedSession);
+          }
         }
       }
     }
