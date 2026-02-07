@@ -7,6 +7,7 @@ export const MODEL_PROVIDERS = {
   ANTHROPIC: 'anthropic',
   OPENAI: 'openai',
   GOOGLE: 'google',
+  GITHUB_COPILOT: 'github-copilot',
 } as const;
 
 export type ModelProvider = (typeof MODEL_PROVIDERS)[keyof typeof MODEL_PROVIDERS];
@@ -94,7 +95,43 @@ export const GOOGLE_MODELS: readonly ModelConfig[] = [
   },
 ] as const;
 
-export const ALL_MODELS = [...ANTHROPIC_MODELS, ...OPENAI_MODELS, ...GOOGLE_MODELS] as const;
+export const GITHUB_COPILOT_MODELS: readonly ModelConfig[] = [
+  {
+    providerId: 'github-copilot',
+    modelId: 'github-copilot/claude-sonnet-4.5',
+    label: 'GitHub Copilot Claude Sonnet 4.5',
+    description: 'Claude Sonnet 4.5 via GitHub Copilot',
+    tier: 'standard',
+  },
+  {
+    providerId: 'github-copilot',
+    modelId: 'github-copilot/claude-opus-4.5',
+    label: 'GitHub Copilot Claude Opus 4.5',
+    description: 'Claude Opus 4.5 via GitHub Copilot',
+    tier: 'premium',
+  },
+  {
+    providerId: 'github-copilot',
+    modelId: 'github-copilot/gpt-4o',
+    label: 'GitHub Copilot GPT-4o',
+    description: 'GPT-4o via GitHub Copilot',
+    tier: 'standard',
+  },
+  {
+    providerId: 'github-copilot',
+    modelId: 'github-copilot/gpt-4o-mini',
+    label: 'GitHub Copilot GPT-4o mini',
+    description: 'GPT-4o mini via GitHub Copilot',
+    tier: 'basic',
+  },
+] as const;
+
+export const ALL_MODELS = [
+  ...ANTHROPIC_MODELS,
+  ...OPENAI_MODELS,
+  ...GOOGLE_MODELS,
+  ...GITHUB_COPILOT_MODELS,
+] as const;
 
 export function findModelById(modelId: string): ModelConfig | undefined {
   return ALL_MODELS.find((model) => model.modelId === modelId);
