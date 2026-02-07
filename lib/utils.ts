@@ -16,6 +16,29 @@ export function extractRepoName(slug: string): string {
 }
 
 /**
+ * Resolves the repository slug from a session configuration.
+ * @param session - The sandbox session
+ * @returns The repository slug in "org/repo" format
+ */
+export function resolveRepoSlug(session: {
+  config: { repoSlug?: string; repoUrl?: string };
+}): string {
+  if (session.config.repoSlug) return session.config.repoSlug;
+
+  if (session.config.repoUrl) {
+    try {
+      const url = new URL(session.config.repoUrl);
+      const [owner, repo] = url.pathname.split('/').filter(Boolean);
+      if (owner && repo) return `${owner}/${repo}`;
+    } catch {
+      return 'unknown/repo';
+    }
+  }
+
+  return 'unknown/repo';
+}
+
+/**
  * Formats a duration in milliseconds to a human-readable string
  * @param durationMs - Duration in milliseconds
  * @returns Formatted duration string (e.g., "2h 30m", "45m", "30s")
