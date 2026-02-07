@@ -4,11 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useModelOptions } from '@/hooks/use-model-options';
+import { usePlanGeneration } from '@/hooks/use-plan-generation';
 import { getModelProvider } from '@/lib/constants/models';
 import { saveLastUsedValues } from '@/lib/storage';
 import type { EnvironmentPreset, UserSettings } from '@/types/sandbox';
@@ -79,6 +83,10 @@ export function ConfigForm({
   presets = [],
 }: ConfigFormProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(defaultPresetId || null);
+  const [taskPrompt, setTaskPrompt] = useState('');
+
+  // Plan generation hook
+  const { mutate: generatePlan, isPending: isGenerating } = usePlanGeneration();
 
   const form = useForm<SandboxConfigFormData>({
     resolver: zodResolver(formSchema),
@@ -215,6 +223,55 @@ export function ConfigForm({
                 />
               </div>
             </div>
+
+            {/* Development-only plan generation */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className='space-y-2 p-4 border rounded-lg bg-muted/50'>
+                <Label htmlFor='task-prompt'>Generate Plan with AI (Development Only)</Label>
+                <Textarea
+                  id='task-prompt'
+                  placeholder="Describe the task you want to plan (e.g., 'Implement user authentication with JWT')"
+                  value={taskPrompt}
+                  onChange={(e) => setTaskPrompt(e.target.value)}
+                  rows={3}
+                />
+                <Button
+                  type='button'
+                  variant='secondary'
+                  onClick={() => {
+                    generatePlan(
+                      {
+                        prompt: taskPrompt,
+                        opencodeAuthJsonB64: form.watch('opencodeAuthJsonB64'),
+                      },
+                      {
+                        onSuccess: (data) => {
+                          form.setValue('planText', data.plan);
+                          toast.success('Plan generated successfully!');
+                          setTaskPrompt(''); // Clear prompt
+                        },
+                        onError: (error) => {
+                          toast.error(`Failed to generate plan: ${error.message}`);
+                        },
+                      }
+                    );
+                  }}
+                  disabled={!taskPrompt.trim() || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      Generating Plan...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className='mr-2 h-4 w-4' />
+                      Generate Plan
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             <FormTextArea
               control={form.control}

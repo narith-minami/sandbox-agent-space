@@ -18,6 +18,7 @@ A Next.js 16 application that manages **Vercel Sandbox SDK** integration for run
 - 📦 **Session Archiving** - Archive completed sessions to reduce clutter
 - 🧪 **Comprehensive Testing** - Unit tests with Vitest covering core functionality
 - 🔧 **Test Helpers** - Shared utilities for reducing test duplication
+- 🤖 **AI Plan Generation** - Auto-generate implementation plans using OpenCode SDK (development only)
 
 ## Getting Started
 
@@ -259,6 +260,28 @@ Keep your workspace organized:
 - Archive completed sessions from the history page
 - Archived sessions are hidden by default
 - Easy to unarchive when needed
+
+### AI Plan Generation (Development Only)
+Auto-generate implementation plans using OpenCode SDK:
+- **Development only**: Feature is disabled in production (returns 404)
+- **OpenCode SDK integration**: Uses the `plan` agent to generate structured implementation plans
+- **Auto-populate**: Generated plans are automatically inserted into the plan text field
+- **Configuration required**: Set `COMMON_OPENCODE_AUTH_JSON_B64` environment variable
+
+**Quick Start**:
+1. Set up OpenCode authentication (see [Plan Mode Quick Start](./docs/PLAN_MODE_QUICKSTART.md))
+2. Run development server: `pnpm run dev`
+3. In sandbox config form, switch to "Text" plan source
+4. Enter task description in the AI generation field
+5. Click "Generate Plan" to auto-populate the plan
+
+**Testing**:
+```bash
+# Run standalone test to verify OpenCode integration
+tsx scripts/test-opencode-plan.ts
+```
+
+See [PLAN_MODE_GUIDE.md](./docs/PLAN_MODE_GUIDE.md) for detailed implementation documentation and [PLAN_MODE_QUICKSTART.md](./docs/PLAN_MODE_QUICKSTART.md) for setup instructions.
 
 ### Basic Authentication
 Protect your deployment with optional Basic Auth:

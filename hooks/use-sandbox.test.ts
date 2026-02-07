@@ -1,7 +1,7 @@
 import { act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createWrapper, renderHook, waitFor } from '@/test/react-test-utils';
-import { useSandboxCreate, useSession, useSessionStatus } from './use-sandbox';
+import { useSandboxCreate, useSandboxStop, useSession, useSessionStatus } from './use-sandbox';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -475,6 +475,54 @@ describe('useSession', () => {
       expect(mockShowSessionNotification).toHaveBeenCalledTimes(2);
       expect(mockShowSessionNotification).toHaveBeenLastCalledWith(sessionId2, 'completed', null);
     });
+  });
+});
+
+describe('useSandboxStop', () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  it('should stop sandbox successfully', async () => {
+    const mockResponse = {
+      success: true,
+      sessionId: '550e8400-e29b-41d4-a716-446655440000',
+      message: 'Sandbox stopped successfully',
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    });
+
+    const { result } = renderHook(() => useSandboxStop(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate(mockResponse.sessionId);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(mockResponse);
+    expect(mockFetch).toHaveBeenCalledWith(`/api/sandbox/${mockResponse.sessionId}/stop`, {
+      method: 'POST',
+    });
+  });
+
+  it('should handle stop sandbox error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ error: 'Sandbox is not running' }),
+    });
+
+    const { result } = renderHook(() => useSandboxStop(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('550e8400-e29b-41d4-a716-446655440000');
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe('Sandbox is not running');
   });
 });
 
