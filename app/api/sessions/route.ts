@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
+import { getGitHubSessionForApi } from '@/lib/auth/get-github-session';
 import { listSessions } from '@/lib/db/queries';
 import { PaginationSchema, SessionListFilterSchema } from '@/lib/validators/config';
 import type { ApiError, SessionListResponse } from '@/types/sandbox';
 
 export async function GET(request: Request) {
   try {
+    const sessionResult = await getGitHubSessionForApi();
+    if (!sessionResult) {
+      return NextResponse.json<ApiError>(
+        { error: 'Authentication required', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      );
+    }
+
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
