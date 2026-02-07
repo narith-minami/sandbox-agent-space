@@ -35,6 +35,7 @@ interface EnvironmentPresetSelectorProps {
   onSelectPreset: (presetId: string | null) => void;
   control: Control<SandboxConfigFormData>;
   defaultGistUrl?: string;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function EnvironmentPresetSelector({
@@ -43,8 +44,10 @@ export function EnvironmentPresetSelector({
   onSelectPreset,
   control,
   defaultGistUrl,
+  onOpenChange,
 }: EnvironmentPresetSelectorProps) {
   const [draftName, setDraftName] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset.id === selectedPresetId) || null,
     [presets, selectedPresetId]
@@ -77,6 +80,8 @@ export function EnvironmentPresetSelector({
           workdir: frontDir || '',
         });
         toast.success('Preset updated');
+        setIsOpen(false);
+        onOpenChange?.(false);
       } else {
         const created = await createPreset.mutateAsync({
           name,
@@ -86,6 +91,8 @@ export function EnvironmentPresetSelector({
         });
         onSelectPreset(created.id);
         toast.success('Preset created');
+        setIsOpen(false);
+        onOpenChange?.(false);
       }
     } catch (error) {
       toast.error('Failed to save preset', {
@@ -95,9 +102,20 @@ export function EnvironmentPresetSelector({
   };
 
   return (
-    <Dialog>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        onOpenChange?.(open);
+      }}
+    >
       <DialogTrigger asChild>
-        <Button type='button' variant='outline' className='w-full justify-between'>
+        <Button
+          type='button'
+          variant='outline'
+          className='w-full justify-between'
+          onClick={() => setIsOpen(true)}
+        >
           <span>{selectedPreset?.name || 'Environment Preset'}</span>
         </Button>
       </DialogTrigger>
