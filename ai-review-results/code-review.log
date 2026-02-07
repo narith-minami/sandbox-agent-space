@@ -1,0 +1,32 @@
+[0m
+> build · gpt-5.3-codex
+[0m
+[0m• [0mreview changes [commit|branch|pr], defaults to uncommitted[90m Build Agent[0m
+[0m✓ [0mreview changes [commit|branch|pr], defaults to uncommitted[90m Build Agent[0m
+[0m→ [0mRead components/sidebar/session-list.tsx
+[0m→ [0mRead hooks/use-sidebar-sessions.ts
+[0m✱ [0mGrep "interface\s+SandboxSession|type\s+SandboxSession"[90m in . · 3 matches[0m
+[0m→ [0mRead types/sandbox.ts
+[0m✱ [0mGrep "createdAt\.getTime\(|createdAt\s*>\s*newest\.createdAt|new Date\(session\.createdAt"[90m in . · 9 matches[0m
+[0m✱ [0mGrep "fetch\('/api/sessions|fetch\(`/api/sessions"[90m in . · 4 matches[0m
+[0m→ [0mRead hooks/use-session-list.ts
+[0m✱ [0mGrep "useSessionList\("[90m in . · 1 match[0m
+[0m✱ [0mGrep "\.createdAt\.[a-zA-Z]+\("[90m in . · 2 matches[0m
+[0m⚙ [0mapply_patch Success. Updated the following files:
+M components/sidebar/session-list.tsx
+[0m
+[0m$ [0mpnpm typecheck
+> sandbox-agent-space@0.1.0 typecheck /vercel/sandbox/repo
+> tsc --noEmit
+[0m
+[0m→ [0mRead components/sidebar/session-list.tsx[90m [offset=1, limit=140][0m
+The review output found one high-severity runtime bug: sidebar sessions come from JSON (`/api/sessions`), so `createdAt` is a string at runtime, but `SessionList` was calling `.getTime()` directly. That can crash rendering/sorting with `TypeError: getTime is not a function`.
+
+I continued and fixed it in `components/sidebar/session-list.tsx:44` by:
+- Adding `getSessionTimestamp(session)` that safely converts `createdAt` via `new Date(...).getTime()`.
+- Replacing all direct `createdAt.getTime()` and raw `createdAt` comparisons in group sorting and item sorting with timestamp-based comparisons.
+
+Validation:
+- Ran `pnpm typecheck` successfully.
+
+If you want, I can also do a follow-up pass to normalize API date fields centrally in the fetch hooks so this mismatch can’t recur elsewhere.

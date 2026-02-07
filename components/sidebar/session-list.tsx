@@ -12,6 +12,57 @@ interface SessionListProps {
   onArchiveOptimistic?: (sessionId: string) => void;
 }
 
+function resolveRepoSlug(session: SandboxSession): string {
+  if (session.config.repoSlug) return session.config.repoSlug;
+
+  if (session.config.repoUrl) {
+    try {
+      const url = new URL(session.config.repoUrl);
+      const [owner, repo] = url.pathname.split('/').filter(Boolean);
+      if (owner && repo) return `${owner}/${repo}`;
+    } catch {
+      return 'unknown/repo';
+    }
+  }
+
+  return 'unknown/repo';
+}
+
+function groupSessionsByRepo(sessions: SandboxSession[]): Map<string, SandboxSession[]> {
+  const groups = new Map<string, SandboxSession[]>();
+
+  for (const session of sessions) {
+    const repoSlug = resolveRepoSlug(session);
+    const existing = groups.get(repoSlug) || [];
+    existing.push(session);
+    groups.set(repoSlug, existing);
+  }
+
+  return groups;
+}
+
+function getSessionTimestamp(session: SandboxSession): number {
+  const timestamp = new Date(session.createdAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function sortGroupsByNewestSession(
+  groups: Map<string, SandboxSession[]>
+): [string, SandboxSession[]][] {
+  return Array.from(groups.entries()).sort(([, sessionsA], [, sessionsB]) => {
+    // Find the newest session in each group
+    const newestA = sessionsA.reduce((newest, session) =>
+      getSessionTimestamp(session) > getSessionTimestamp(newest) ? session : newest
+    );
+    const newestB = sessionsB.reduce((newest, session) =>
+      getSessionTimestamp(session) > getSessionTimestamp(newest) ? session : newest
+    );
+
+    // Sort by newest session's createdAt desc
+    return getSessionTimestamp(newestB) - getSessionTimestamp(newestA);
+  });
+}
+
 export function SessionList({
   sessions,
   isLoading = false,
@@ -34,17 +85,46 @@ export function SessionList({
     return <div className='px-4 py-6 text-xs text-muted-foreground'>No sessions found</div>;
   }
 
+  // Group sessions by repository
+  const groups = groupSessionsByRepo(sessions);
+  const sortedGroups = sortGroupsByNewestSession(groups);
+
   return (
     <ScrollArea className='h-full'>
-      <div className={compact ? 'flex flex-col gap-2 px-1 py-3' : 'space-y-2 px-2 py-3'}>
-        {sessions.map((session) => (
-          <SessionListItem
-            key={session.id}
-            session={session}
-            compact={compact}
-            onArchiveOptimistic={onArchiveOptimistic}
-          />
-        ))}
+      <div className={compact ? 'flex flex-col gap-2 px-1 py-3' : 'space-y-4 px-2 py-3'}>
+        {sortedGroups.map(([repoSlug, repoSessions]) => {
+          // Sort sessions within group by createdAt desc
+          const sortedSessions = repoSessions.sort(
+            (a, b) => getSessionTimestamp(b) - getSessionTimestamp(a)
+          );
+
+          if (compact) {
+            return sortedSessions.map((session) => (
+              <SessionListItem
+                key={session.id}
+                session={session}
+                compact={compact}
+                onArchiveOptimistic={onArchiveOptimistic}
+              />
+            ));
+          }
+
+          return (
+            <div key={repoSlug} className='space-y-2'>
+              <div className='px-2 py-1 text-xs font-medium text-muted-foreground border-b border-border/50'>
+                {repoSlug}
+              </div>
+              {sortedSessions.map((session) => (
+                <SessionListItem
+                  key={session.id}
+                  session={session}
+                  compact={compact}
+                  onArchiveOptimistic={onArchiveOptimistic}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </ScrollArea>
   );
