@@ -41,7 +41,12 @@
   },
   "laravel": {
     "enabled": true,
-    "checks": ["eloquent-n-plus-1", "mass-assignment", "validation-rules", "route-security"]
+    "checks": [
+      "eloquent-n-plus-1",
+      "mass-assignment",
+      "validation-rules",
+      "route-security"
+    ]
   },
   "nextjs": {
     "enabled": true,

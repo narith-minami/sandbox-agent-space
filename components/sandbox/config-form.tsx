@@ -104,6 +104,12 @@ export function ConfigForm({
   });
 
   const selectedRuntime = form.watch('runtime');
+  // Compute a concise runtime label for the Start button (hide the leading "Node.js " text)
+  const selectedRuntimeLabel =
+    RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label || '';
+  const displayRuntimeLabel = selectedRuntimeLabel.startsWith('Node.js ')
+    ? selectedRuntimeLabel.replace('Node.js ', '')
+    : selectedRuntimeLabel;
   const opencodeAuthJsonB64 = form.watch('opencodeAuthJsonB64');
   const modelId = form.watch('modelId');
   const {
@@ -239,9 +245,7 @@ export function ConfigForm({
                       Start <ArrowUp className='ml-1 h-4 w-4' />
                     </span>
                     {selectedRuntime && (
-                      <span className='ml-2 text-xs opacity-75'>
-                        ({RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label})
-                      </span>
+                      <span className='ml-2 text-xs opacity-75'>({displayRuntimeLabel})</span>
                     )}
                   </>
                 )}
