@@ -2,6 +2,29 @@
 
 サンドボックス（Vercel Sandbox）内で実行するための Gist 用スクリプトです。
 
+## Gist のローカルクローン（編集用・git管理外）
+
+[integrated-review-workflow.sh](https://gist.github.com/619c2a057ab59e751f855220b8e82e0f) をリポジトリの git 管理外で編集するために、次のディレクトリにクローン済みです。
+
+- **パス:** `scripts/gist-integrated-review-workflow/`
+- **内容:** `integrated-review-workflow.sh`（OpenCode実装 → AI Code Review → PR作成の統合ワークフロー）
+- **注意:** このディレクトリは `.gitignore` で除外されているため、変更は本リポジトリにコミットされません。Gist へ反映する場合は、クローン先で `git add` / `git commit` / `git push` してください。
+
+```bash
+# 編集後、Gist に反映する例
+cd scripts/gist-integrated-review-workflow
+git add integrated-review-workflow.sh
+git commit -m "fix: ..."
+git push origin master
+```
+
+初回クローンし直す場合（上書きしたい場合）:
+
+```bash
+rm -rf scripts/gist-integrated-review-workflow
+git clone https://gist.github.com/619c2a057ab59e751f855220b8e82e0f.git scripts/gist-integrated-review-workflow
+```
+
 ## ファイル一覧
 
 | ファイル | 用途 | Gist にアップロード |
