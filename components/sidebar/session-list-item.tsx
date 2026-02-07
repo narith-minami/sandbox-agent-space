@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { calculateSessionDuration, cn, extractRepoName } from '@/lib/utils';
+import { calculateSessionDuration, cn, extractRepoName, resolveRepoSlug } from '@/lib/utils';
 import type { SandboxSession, SessionStatus } from '@/types/sandbox';
 import { PrStatusBadge } from './pr-status-badge';
 
@@ -70,22 +70,6 @@ function formatSessionDate(createdAt: Date | string): string {
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
   const day = `${date.getDate()}`.padStart(2, '0');
   return `${month}/${day} ${hours}:${minutes}`;
-}
-
-function resolveRepoSlug(session: SandboxSession): string {
-  if (session.config.repoSlug) return session.config.repoSlug;
-
-  if (session.config.repoUrl) {
-    try {
-      const url = new URL(session.config.repoUrl);
-      const [owner, repo] = url.pathname.split('/').filter(Boolean);
-      if (owner && repo) return `${owner}/${repo}`;
-    } catch {
-      return 'unknown/repo';
-    }
-  }
-
-  return 'unknown/repo';
 }
 
 function truncateRepoSlug(slug: string, maxLength = 25): string {

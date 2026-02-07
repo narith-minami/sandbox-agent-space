@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { SandboxSession } from '@/types/sandbox';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,4 +51,25 @@ export function calculateSessionDuration(startDate: Date, endDate?: Date | null)
   const end = endDate || new Date();
   const durationMs = end.getTime() - startDate.getTime();
   return formatDuration(durationMs);
+}
+
+/**
+ * Resolves the repository slug from a session configuration
+ * @param session - The sandbox session
+ * @returns The repository slug in "owner/repo" format
+ */
+export function resolveRepoSlug(session: SandboxSession): string {
+  if (session.config.repoSlug) return session.config.repoSlug;
+
+  if (session.config.repoUrl) {
+    try {
+      const url = new URL(session.config.repoUrl);
+      const [owner, repo] = url.pathname.split('/').filter(Boolean);
+      if (owner && repo) return `${owner}/${repo}`;
+    } catch {
+      return 'unknown/repo';
+    }
+  }
+
+  return 'unknown/repo';
 }
