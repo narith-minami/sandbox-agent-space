@@ -20,7 +20,6 @@ import { EnvironmentPresetSelector } from './config-form/EnvironmentPresetSelect
 import { FormTextArea } from './config-form/FormField';
 import { ModelSelector } from './config-form/ModelSelector';
 import { RepositorySection } from './config-form/RepositorySection';
-import { RUNTIME_OPTIONS } from './config-form/RuntimeSelector';
 
 // Form schema for react-hook-form
 const formSchema = z
@@ -111,13 +110,6 @@ export function ConfigForm({
     },
   });
 
-  const selectedRuntime = form.watch('runtime');
-  // Compute a concise runtime label for the Start button (hide the leading "Node.js " text)
-  const selectedRuntimeLabel =
-    RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label || '';
-  const displayRuntimeLabel = selectedRuntimeLabel.startsWith('Node.js ')
-    ? selectedRuntimeLabel.replace('Node.js ', '')
-    : selectedRuntimeLabel;
   const opencodeAuthJsonB64 = form.watch('opencodeAuthJsonB64');
   const modelId = form.watch('modelId');
   const {
@@ -297,14 +289,9 @@ export function ConfigForm({
                     Starting Sandbox...
                   </>
                 ) : (
-                  <>
-                    <span className='inline-flex items-center'>
-                      Start <ArrowUp className='ml-1 h-4 w-4' />
-                    </span>
-                    {selectedRuntime && (
-                      <span className='ml-2 text-xs opacity-75'>({displayRuntimeLabel})</span>
-                    )}
-                  </>
+                  <span className='inline-flex items-center'>
+                    Start <ArrowUp className='ml-1 h-4 w-4' />
+                  </span>
                 )}
               </Button>
               {hasNoAvailableModels && (
