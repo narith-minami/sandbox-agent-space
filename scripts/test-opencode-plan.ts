@@ -11,6 +11,24 @@
 
 import { createOpencode, type Auth as OpencodeAuth } from '@opencode-ai/sdk';
 
+/**
+ * Message part from OpenCode session
+ */
+interface MessagePart {
+  type: string;
+  text?: string;
+}
+
+/**
+ * Message from OpenCode session
+ */
+interface OpencodeMessage {
+  info?: {
+    role?: string;
+  };
+  parts?: MessagePart[];
+}
+
 async function testPlanGeneration() {
   console.log('=== OpenCode Plan Agent Test ===\n');
 
@@ -61,7 +79,8 @@ async function testPlanGeneration() {
     console.log(`✅ Session created: ${session.id}`);
 
     // 5. Send prompt with plan agent
-    const testPrompt = 'Create a simple implementation plan for adding user authentication with JWT tokens';
+    const testPrompt =
+      'Create a simple implementation plan for adding user authentication with JWT tokens';
     console.log('\n🤖 Sending prompt to plan agent...');
     console.log(`Prompt: "${testPrompt}"`);
 
@@ -100,13 +119,13 @@ async function testPlanGeneration() {
 
     console.log(`📊 Total messages: ${messages.length}\n`);
 
-    messages.forEach((msg: any, index: number) => {
+    messages.forEach((msg: OpencodeMessage, index: number) => {
       console.log(`--- Message ${index + 1} ---`);
       console.log(`Role: ${msg?.info?.role || 'unknown'}`);
       console.log(`Parts count: ${Array.isArray(msg?.parts) ? msg.parts.length : 0}`);
 
       if (Array.isArray(msg?.parts)) {
-        msg.parts.forEach((part: any, partIndex: number) => {
+        msg.parts.forEach((part: MessagePart, partIndex: number) => {
           console.log(`  Part ${partIndex + 1}:`);
           console.log(`    Type: ${part?.type || 'unknown'}`);
           if (part?.text) {
@@ -125,13 +144,13 @@ async function testPlanGeneration() {
     console.log('🔍 Attempting plan extraction...');
 
     for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i];
+      const message = messages[i] as OpencodeMessage;
 
       if (message?.info?.role === 'assistant' && Array.isArray(message.parts)) {
         const textParts = message.parts
-          .filter((part: any) => part.type === 'text')
-          .map((part: any) => part.text)
-          .filter((text: any) => !!text?.trim());
+          .filter((part) => part.type === 'text')
+          .map((part) => part.text)
+          .filter((text): text is string => !!text?.trim());
 
         if (textParts.length > 0) {
           console.log('✅ Plan found!');

@@ -18,16 +18,16 @@ describe('POST /api/plan/generate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Use type assertion to override readonly NODE_ENV in tests
-    (process.env as any).NODE_ENV = 'development';
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
   });
 
   afterEach(() => {
-    (process.env as any).NODE_ENV = originalEnv;
+    (process.env as Record<string, string | undefined>).NODE_ENV = originalEnv;
   });
 
   it('should return 404 in production mode', async () => {
     // Arrange
-    (process.env as any).NODE_ENV = 'production';
+    (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
     const request = new Request('http://localhost:3000/api/plan/generate', {
       method: 'POST',
       body: JSON.stringify({ prompt: 'Test prompt' }),
@@ -45,7 +45,7 @@ describe('POST /api/plan/generate', () => {
 
   it('should generate plan successfully with valid request', async () => {
     // Arrange
-    (process.env as any).COMMON_OPENCODE_AUTH_JSON_B64 = 'test-auth';
+    (process.env as Record<string, string | undefined>).COMMON_OPENCODE_AUTH_JSON_B64 = 'test-auth';
 
     const planResult = {
       plan: '# Implementation Plan\n\n1. Step one',
@@ -106,7 +106,7 @@ describe('POST /api/plan/generate', () => {
   it('should use COMMON_OPENCODE_AUTH_JSON_B64 as fallback', async () => {
     // Arrange
     const commonAuth = 'common-base64-auth';
-    (process.env as any).COMMON_OPENCODE_AUTH_JSON_B64 = commonAuth;
+    (process.env as Record<string, string | undefined>).COMMON_OPENCODE_AUTH_JSON_B64 = commonAuth;
 
     mockGeneratePlan.mockResolvedValue({
       plan: 'Test plan',
@@ -194,7 +194,7 @@ describe('POST /api/plan/generate', () => {
 
   it('should return 500 if generatePlan throws an error', async () => {
     // Arrange
-    (process.env as any).COMMON_OPENCODE_AUTH_JSON_B64 = 'test-auth';
+    (process.env as Record<string, string | undefined>).COMMON_OPENCODE_AUTH_JSON_B64 = 'test-auth';
 
     mockGeneratePlan.mockRejectedValue(new Error('OpenCode SDK error'));
 

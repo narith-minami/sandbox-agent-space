@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { usePlanGeneration } from './use-plan-generation';
 
 // Mock fetch
-global.fetch = vi.fn();
+const mockFetch = vi.fn() as Mock;
+global.fetch = mockFetch;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -32,7 +33,7 @@ describe('usePlanGeneration', () => {
       sessionId: 'session-123',
     };
 
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => mockResponse,
     });
@@ -63,7 +64,7 @@ describe('usePlanGeneration', () => {
 
   it('should include opencodeAuthJsonB64 when provided', async () => {
     // Arrange
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ plan: 'Test plan', sessionId: 'session-123' }),
     });
@@ -95,7 +96,7 @@ describe('usePlanGeneration', () => {
 
   it('should handle error response with message field', async () => {
     // Arrange
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       json: async () => ({ message: 'Custom error message' }),
     });
@@ -118,7 +119,7 @@ describe('usePlanGeneration', () => {
 
   it('should handle error response with error field', async () => {
     // Arrange
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Error field message' }),
     });
@@ -141,7 +142,7 @@ describe('usePlanGeneration', () => {
 
   it('should handle error response with default message', async () => {
     // Arrange
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       json: async () => ({}),
     });
@@ -164,7 +165,7 @@ describe('usePlanGeneration', () => {
 
   it('should handle network errors', async () => {
     // Arrange
-    (global.fetch as any).mockRejectedValue(new Error('Network error'));
+    mockFetch.mockRejectedValue(new Error('Network error'));
 
     const { result } = renderHook(() => usePlanGeneration(), {
       wrapper: createWrapper(),
@@ -184,12 +185,12 @@ describe('usePlanGeneration', () => {
 
   it('should set isPending to true during mutation', async () => {
     // Arrange
-    let resolvePromise: (value: any) => void;
+    let resolvePromise: ((value: Response) => void) | undefined;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
 
-    (global.fetch as any).mockReturnValue(promise);
+    mockFetch.mockReturnValue(promise);
 
     const { result } = renderHook(() => usePlanGeneration(), {
       wrapper: createWrapper(),
@@ -204,10 +205,10 @@ describe('usePlanGeneration', () => {
     await waitFor(() => expect(result.current.isPending).toBe(true));
 
     // Cleanup
-    resolvePromise!({
+    resolvePromise?.({
       ok: true,
       json: async () => ({ plan: 'Test', sessionId: '123' }),
-    });
+    } as Response);
 
     await waitFor(() => expect(result.current.isPending).toBe(false));
   });
@@ -219,7 +220,7 @@ describe('usePlanGeneration', () => {
       sessionId: 'session-123',
     };
 
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => mockResponse,
     });
@@ -242,7 +243,7 @@ describe('usePlanGeneration', () => {
 
   it('should call onError callback when mutation fails', async () => {
     // Arrange
-    (global.fetch as any).mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Test error' }),
     });
