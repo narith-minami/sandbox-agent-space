@@ -34,10 +34,9 @@ export function SessionCard({ session }: SessionCardProps) {
     minute: '2-digit',
   });
 
-  const duration = calculateSessionDuration(
-    new Date(session.createdAt),
-    session.endedAt ? new Date(session.endedAt) : null
-  );
+  const duration =
+    session.endedAt &&
+    calculateSessionDuration(new Date(session.createdAt), new Date(session.endedAt));
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -66,10 +65,12 @@ export function SessionCard({ session }: SessionCardProps) {
                   <Clock className='h-3 w-3' />
                   {formattedDate}
                 </span>
-                <span className='flex items-center gap-1 font-semibold'>
-                  <Timer className='h-3 w-3' />
-                  {duration}
-                </span>
+                {duration && (
+                  <span className='flex items-center gap-1 font-semibold'>
+                    <Timer className='h-3 w-3' />
+                    {duration}
+                  </span>
+                )}
                 {session.config.frontDir && (
                   <span className='flex items-center gap-1 truncate'>
                     <GitBranch className='h-3 w-3' />
@@ -133,10 +134,12 @@ export function SessionCard({ session }: SessionCardProps) {
             <Clock className='h-4 w-4' />
             <span>{formattedDate}</span>
           </div>
-          <div className='flex items-center gap-2'>
-            <Timer className='h-4 w-4' />
-            <span className='font-semibold'>Duration: {duration}</span>
-          </div>
+          {duration && (
+            <div className='flex items-center gap-2'>
+              <Timer className='h-4 w-4' />
+              <span className='font-semibold'>Duration: {duration}</span>
+            </div>
+          )}
           <div className='flex items-center gap-2'>
             <GitBranch className='h-4 w-4' />
             <span className='truncate'>{session.config.frontDir}</span>
