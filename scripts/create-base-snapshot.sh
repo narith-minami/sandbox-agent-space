@@ -118,7 +118,8 @@ cat > ~/.config/opencode/opencode.json << "EOF"
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "openai/gpt-5.3-codex",
-  "small_model": "openai/gpt-5.1-codex-mini"
+  "small_model": "openai/gpt-5.1-codex-mini",
+  "enabled_providers": ["openai", "opencode", "github-copilot", "anthropic"]
 }
 EOF
 

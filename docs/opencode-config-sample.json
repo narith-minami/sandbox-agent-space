@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/schema/config.json",
+  "providers": {
+    "anthropic": {
+      "enabled": true,
+      "apiKey": "sk-ant-..."
+    },
+    "openai": {
+      "enabled": false
+    },
+    "github-copilot": {
+      "enabled": false
+    }
+  },
+  "agents": {
+    "plan": {
+      "enabled": true,
+      "model": {
+        "providerId": "anthropic",
+        "modelId": "claude-sonnet-4-5"
+      }
+    },
+    "general-purpose": {
+      "enabled": true,
+      "model": {
+        "providerId": "anthropic",
+        "modelId": "claude-sonnet-4-5"
+      }
+    }
+  },
+  "server": {
+    "port": 4096,
+    "host": "127.0.0.1"
+  }
+}

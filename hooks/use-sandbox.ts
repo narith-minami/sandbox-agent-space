@@ -29,6 +29,12 @@ function invalidateSidebarSessions(queryClient: ReturnType<typeof useQueryClient
   queryClient.invalidateQueries({ queryKey: ['sidebar-sessions'] });
 }
 
+interface StopSandboxResponse {
+  success: boolean;
+  sessionId: string;
+  message: string;
+}
+
 // Create sandbox mutation
 export function useSandboxCreate() {
   const queryClient = useQueryClient();
@@ -62,6 +68,53 @@ export function useSandboxCreate() {
       // Invalidate sessions list and sidebar sessions
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['sidebar-sessions'] });
+    },
+  });
+}
+
+// Stop sandbox mutation
+export function useSandboxStop() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: string): Promise<StopSandboxResponse> => {
+      const response = await fetch(`/api/sandbox/${sessionId}/stop`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error: ApiError = await response.json();
+        throw new Error(error.error);
+      }
+
+      return response.json();
+    },
+    onMutate: async (sessionId) => {
+      await queryClient.cancelQueries({ queryKey: ['session', sessionId] });
+
+      const previousSession = queryClient.getQueryData<SandboxSessionWithLogs>([
+        'session',
+        sessionId,
+      ]);
+
+      if (previousSession) {
+        queryClient.setQueryData<SandboxSessionWithLogs>(['session', sessionId], {
+          ...previousSession,
+          status: 'stopping',
+        });
+      }
+
+      return { previousSession, sessionId };
+    },
+    onError: (_error, _sessionId, context) => {
+      if (context?.previousSession) {
+        queryClient.setQueryData(['session', context.sessionId], context.previousSession);
+      }
+    },
+    onSettled: (_data, _error, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      invalidateSidebarSessions(queryClient);
     },
   });
 }

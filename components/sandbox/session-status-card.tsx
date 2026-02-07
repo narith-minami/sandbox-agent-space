@@ -1,11 +1,14 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { LogViewer } from '@/components/sandbox/log-viewer';
 import { StatusBadge } from '@/components/sandbox/status-badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { StreamLogEntry } from '@/hooks/use-log-stream';
+import { useSandboxStop } from '@/hooks/use-sandbox';
 import { calculateSessionDuration } from '@/lib/utils';
 import type { SandboxSessionWithLogs } from '@/types/sandbox';
 
@@ -36,13 +39,45 @@ export function SessionStatusCard({
   isComplete,
   streamError,
 }: SessionStatusCardProps) {
+  const stopSandbox = useSandboxStop();
+  const canStop = session?.status === 'running' || session?.status === 'pending';
+
+  const handleStopSandbox = async () => {
+    if (!sessionId || !canStop) return;
+
+    try {
+      const result = await stopSandbox.mutateAsync(sessionId);
+      toast.success(result.message);
+    } catch (error) {
+      toast.error('Failed to stop sandbox', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
   return (
     <Card className='border-0 shadow-none rounded-none md:border md:shadow-sm md:rounded-xl'>
       <CardHeader className='px-4 md:px-6'>
         <div className='flex items-center justify-between'>
           <CardTitle>Session</CardTitle>
-          {session && <StatusBadge status={session.status} />}
-          {isLoading && !session && <Loader2 className='h-4 w-4 animate-spin' />}
+          <div className='flex items-center gap-2'>
+            {canStop && (
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleStopSandbox}
+                disabled={stopSandbox.isPending || session?.status === 'stopping'}
+              >
+                {stopSandbox.isPending ? (
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                ) : (
+                  'Stop Sandbox'
+                )}
+              </Button>
+            )}
+            {session && <StatusBadge status={session.status} />}
+            {isLoading && !session && <Loader2 className='h-4 w-4 animate-spin' />}
+          </div>
         </div>
       </CardHeader>
       <CardContent className='space-y-4 px-4 md:px-6'>

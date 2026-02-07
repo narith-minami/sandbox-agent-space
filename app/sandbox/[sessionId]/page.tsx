@@ -8,19 +8,21 @@ import {
   ExternalLink,
   FileText,
   GitBranch,
+  Loader2,
   RefreshCw,
   ScrollText,
   StickyNote,
 } from 'lucide-react';
 import Link from 'next/link';
 import { use } from 'react';
+import { toast } from 'sonner';
 import { LogViewer } from '@/components/sandbox/log-viewer';
 import { StatusBadge } from '@/components/sandbox/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSession } from '@/hooks/use-sandbox';
+import { useSandboxStop, useSession } from '@/hooks/use-sandbox';
 import { extractRepoName } from '@/lib/utils';
 
 interface PageProps {
@@ -30,6 +32,22 @@ interface PageProps {
 export default function SessionDetailPage({ params }: PageProps) {
   const { sessionId } = use(params);
   const { data: session, isLoading, error, refetch } = useSession(sessionId);
+  const stopSandbox = useSandboxStop();
+
+  const canStop = session?.status === 'running' || session?.status === 'pending';
+
+  const handleStopSandbox = async () => {
+    if (!canStop) return;
+
+    try {
+      const result = await stopSandbox.mutateAsync(sessionId);
+      toast.success(result.message);
+    } catch (error) {
+      toast.error('Failed to stop sandbox', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -115,7 +133,23 @@ export default function SessionDetailPage({ params }: PageProps) {
             <p className='text-sm text-muted-foreground font-mono'>{sessionId}</p>
           </div>
         </div>
-        <StatusBadge status={session.status} />
+        <div className='flex items-center gap-2'>
+          {canStop && (
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={handleStopSandbox}
+              disabled={stopSandbox.isPending || session.status === 'stopping'}
+            >
+              {stopSandbox.isPending ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                'Stop Sandbox'
+              )}
+            </Button>
+          )}
+          <StatusBadge status={session.status} />
+        </div>
       </div>
 
       <div className='grid lg:grid-cols-3 gap-6'>
