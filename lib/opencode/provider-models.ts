@@ -21,12 +21,49 @@ export interface OpencodeModelsResponse {
   debug: DebugInfo;
 }
 
+interface SdkProviderModel {
+  id: string;
+  name: string;
+}
+
+interface SdkProvider {
+  id: string;
+  name: string;
+  models?: Record<string, SdkProviderModel>;
+}
+
+interface SdkProviderData {
+  all?: SdkProvider[];
+  connected?: string[];
+  default?: Record<string, boolean>;
+}
+
 const PROVIDER_ALIASES: Record<string, string> = {
   copilot: 'github-copilot',
   githubcopilot: 'github-copilot',
   'github-copilot': 'github-copilot',
   'github/copilot': 'github-copilot',
 };
+
+const EMPTY_RESPONSE: OpencodeModelsResponse = {
+  providers: [],
+  models: [],
+  source: 'sdk',
+  debug: {
+    sourceModule: '@opencode-ai/sdk',
+    connectedProviderIds: [],
+    providerModelCounts: {},
+  },
+};
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]);
+}
 
 function normalizeProviderId(raw: string): string {
   const normalized = raw.trim().toLowerCase().replaceAll('_', '-');
@@ -50,7 +87,7 @@ function toTier(modelId: string, modelName: string): ModelConfig['tier'] {
 function toModelConfig(
   providerId: string,
   providerName: string,
-  model: { id: string; name: string }
+  model: SdkProviderModel
 ): ModelConfig {
   const modelId = model.id;
   const label = model.name || model.id;
@@ -107,6 +144,9 @@ async function applyAuthOverrides(
   setAuth: (providerId: string, auth: OpencodeAuth) => Promise<unknown>
 ): Promise<void> {
   const entries = Object.entries(authMap);
+  if (entries.length === 0) {
+    return;
+  }
 
   await Promise.allSettled(entries.map(([providerId, auth]) => setAuth(providerId, auth)));
 }
@@ -114,26 +154,43 @@ async function applyAuthOverrides(
 export async function getConnectedProviderModels(
   opencodeAuthJsonB64?: string
 ): Promise<OpencodeModelsResponse> {
-  const { client, server } = await createOpencode();
+  let server: { close: () => void } | undefined;
 
   try {
+    const { client, server: createdServer } = await withTimeout(
+      createOpencode(),
+      10000,
+      'OpenCode SDK initialization timeout'
+    );
+    server = createdServer;
+
     const authMap = decodeAuthMap(opencodeAuthJsonB64);
     if (Object.keys(authMap).length > 0) {
-      await applyAuthOverrides(authMap, (providerId, auth) => {
-        return client.auth.set({
-          path: { id: providerId },
-          body: auth,
-        });
-      });
+      await withTimeout(
+        applyAuthOverrides(authMap, (providerId, auth) => {
+          return client.auth.set({
+            path: { id: providerId },
+            body: auth,
+          });
+        }),
+        5000,
+        'Auth setup timeout'
+      );
     }
 
-    const providerListResponse = await client.provider.list({
-      query: { directory: process.cwd() },
-    });
+    const providerListResponse = await withTimeout(
+      client.provider.list({ query: { directory: process.cwd() } }),
+      10000,
+      'Provider list fetch timeout'
+    );
 
-    const providerData = providerListResponse.data;
-    const allProviders = providerData?.all || [];
-    const connectedProviderIds = new Set((providerData?.connected || []).map(normalizeProviderId));
+    const providerData = providerListResponse.data as SdkProviderData | undefined;
+    if (!providerData) {
+      return EMPTY_RESPONSE;
+    }
+
+    const allProviders = providerData.all || [];
+    const connectedProviderIds = new Set((providerData.connected || []).map(normalizeProviderId));
 
     const providers: ProviderRecord[] = allProviders
       .map((provider) => {
@@ -141,9 +198,9 @@ export async function getConnectedProviderModels(
 
         return {
           id: providerId,
-          name: provider.name,
+          name: provider.name || providerId,
           connected: connectedProviderIds.has(providerId),
-          isDefault: Boolean(providerData?.default?.[providerId]),
+          isDefault: Boolean(providerData.default?.[providerId]),
         };
       })
       .filter((provider) => provider.connected);
@@ -156,7 +213,7 @@ export async function getConnectedProviderModels(
         }
 
         return Object.values(provider.models || {}).map((model) =>
-          toModelConfig(providerId, provider.name, model)
+          toModelConfig(providerId, provider.name || providerId, model)
         );
       })
     );
@@ -171,7 +228,16 @@ export async function getConnectedProviderModels(
         providerModelCounts: providerModelCounts(models),
       },
     };
+  } catch (error) {
+    console.error('[OpenCode] Failed to get connected provider models:', error);
+    return EMPTY_RESPONSE;
   } finally {
-    server.close();
+    if (server) {
+      try {
+        server.close();
+      } catch (closeError) {
+        console.error('[OpenCode] Failed to close server:', closeError);
+      }
+    }
   }
 }

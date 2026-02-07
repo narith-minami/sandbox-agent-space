@@ -51,3 +51,28 @@ sandbox stop sbx_XXXXXXXX
 # 対話で REPO_URL / BASE_BRANCH / GitHub token 等を入力
 # 完了後、scripts/snapshot-id.txt に Snapshot ID が保存される
 ```
+
+---
+
+## トラブルシュート: lock と package.json の不一致
+
+- **pnpm 利用時**（`pnpm-lock.yaml` がある）: スクリプトは `pnpm install --frozen-lockfile` を実行し、失敗時は `pnpm install` にフォールバックします。
+- **npm 利用時**: `package.json` に依存を足したあと `package-lock.json` を更新していないと `npm ci` が失敗することがあります（例: `Missing: opencode-ai@1.1.53 from lock file`）。失敗時は自動で `npm install` にフォールバックします。
+
+**恒久対応（リポジトリ側）:**
+
+```bash
+# pnpm の場合
+pnpm install
+git add pnpm-lock.yaml
+git commit -m "chore: sync pnpm-lock.yaml"
+git push
+
+# npm の場合
+npm install
+git add package-lock.json
+git commit -m "chore: sync package-lock.json with package.json"
+git push
+```
+
+再現性を上げるには lock ファイルの同期・コミットを推奨します。

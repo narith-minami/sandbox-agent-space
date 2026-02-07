@@ -94,16 +94,29 @@ export PATH="$HOME/.local/bin:$PATH"
 log "✓ Tools installed"
 
 # -----------------------
-# 依存関係インストール
+# 依存関係インストール（pnpm 優先、なければ npm）
 # -----------------------
 log "4. Installing dependencies..."
 
-if [[ -d frontend ]]; then
-  cd frontend
-  npm ci --no-audit
-  cd ..
+install_deps() {
+  local dir="$1"
+  if [[ -f "$dir/pnpm-lock.yaml" ]]; then
+    if ! command -v pnpm &>/dev/null; then
+      log "   Enabling pnpm via corepack..."
+      corepack enable pnpm 2>/dev/null || npm install -g pnpm
+    fi
+    (cd "$dir" && pnpm install --frozen-lockfile) || (cd "$dir" && log "   pnpm install --frozen-lockfile failed, trying pnpm install..." && pnpm install)
+  else
+    (cd "$dir" && npm ci --no-audit) || (cd "$dir" && log "   npm ci failed (e.g. lock out of sync), trying npm install..." && npm install --no-audit)
+  fi
+}
+
+if [[ -d frontend ]] && [[ -f frontend/package.json ]]; then
+  install_deps frontend
+elif [[ -f package.json ]]; then
+  install_deps .
 else
-  log "   (no frontend/ dir, skipping npm ci)"
+  log "   (no package.json in repo root or frontend/, skipping install)"
 fi
 
 log "✓ Dependencies installed"
@@ -119,7 +132,7 @@ cat > ~/.config/opencode/opencode.json << "EOF"
   "$schema": "https://opencode.ai/config.json",
   "model": "openai/gpt-5.3-codex",
   "small_model": "openai/gpt-5.1-codex-mini",
-  "enabled_providers": ["openai", "opencode", "github-copilot", "anthropic"]
+  "enabled_providers": ["openai", "opencode", "github-copilot", "anthropic", "openrouter", "gemini"]
 }
 EOF
 
@@ -188,15 +201,6 @@ cat > .ai-review-config.json << 'EOF'
         "documentation"
       ]
     }
-  },
-  "laravel": {
-    "enabled": true,
-    "checks": [
-      "eloquent-n-plus-1",
-      "mass-assignment",
-      "validation-rules",
-      "route-security"
-    ]
   },
   "nextjs": {
     "enabled": true,
