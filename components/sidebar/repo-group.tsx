@@ -9,33 +9,11 @@ import { SessionListItem } from './session-list-item';
 interface RepoGroupProps {
   repoSlug: string;
   sessions: SandboxSession[];
-  compact?: boolean;
   onArchiveOptimistic?: (sessionId: string) => void;
 }
 
-export function RepoGroup({
-  repoSlug,
-  sessions,
-  compact = false,
-  onArchiveOptimistic,
-}: RepoGroupProps) {
+export function RepoGroup({ repoSlug, sessions, onArchiveOptimistic }: RepoGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
-
-  // In compact mode, don't use grouping - just render sessions directly
-  if (compact) {
-    return (
-      <>
-        {sessions.map((session) => (
-          <SessionListItem
-            key={session.id}
-            session={session}
-            compact={compact}
-            onArchiveOptimistic={onArchiveOptimistic}
-          />
-        ))}
-      </>
-    );
-  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -49,7 +27,6 @@ export function RepoGroup({
           <SessionListItem
             key={session.id}
             session={session}
-            compact={compact}
             onArchiveOptimistic={onArchiveOptimistic}
           />
         ))}
