@@ -6,7 +6,7 @@ import {
   Clock,
   ExternalLink,
   FileText,
-  GitBranch,
+  Folder,
   GitPullRequest,
   Loader2,
   Timer,
@@ -72,7 +72,7 @@ export function SessionCard({ session }: SessionCardProps) {
                 </span>
                 {session.config.frontDir && (
                   <span className='flex items-center gap-1 truncate'>
-                    <GitBranch className='h-3 w-3' />
+                    <Folder className='h-3 w-3' />
                     {session.config.frontDir}
                   </span>
                 )}
@@ -138,7 +138,7 @@ export function SessionCard({ session }: SessionCardProps) {
             <span className='font-semibold'>Duration: {duration}</span>
           </div>
           <div className='flex items-center gap-2'>
-            <GitBranch className='h-4 w-4' />
+            <Folder className='h-4 w-4' />
             <span className='truncate'>{session.config.frontDir}</span>
           </div>
           {session.memo && (
