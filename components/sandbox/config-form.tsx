@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Sparkles } from 'lucide-react';
+import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -235,7 +235,9 @@ export function ConfigForm({
                   </>
                 ) : (
                   <>
-                    <span className="inline-flex items-center">Start <ArrowUp className="ml-1 h-4 w-4" /></span>
+                    <span className='inline-flex items-center'>
+                      Start <ArrowUp className='ml-1 h-4 w-4' />
+                    </span>
                     {selectedRuntime && (
                       <span className='ml-2 text-xs opacity-75'>
                         ({RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label})

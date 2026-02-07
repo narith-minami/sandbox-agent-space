@@ -101,6 +101,7 @@ export function ModelSelector({
                     : undefined
                 }
                 onValueChange={(value) => {
+                  if (value.startsWith('__')) return;
                   const selected = fromSelectValue(value);
                   field.onChange(selected.modelId);
                   form.setValue('modelProvider', selected.providerId);

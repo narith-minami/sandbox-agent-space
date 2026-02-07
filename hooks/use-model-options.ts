@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRef } from 'react';
 import type { ModelConfig } from '@/lib/constants/models';
 
 export interface ConnectedProvider {
@@ -21,15 +20,13 @@ export interface ModelOptionsResponse {
 }
 
 export function useModelOptions(opencodeAuthJsonB64?: string) {
-  const initialAuthRef = useRef(opencodeAuthJsonB64 || '');
-
   return useQuery<ModelOptionsResponse>({
-    queryKey: ['opencode-model-options'],
+    queryKey: ['opencode-model-options', opencodeAuthJsonB64 || ''],
     queryFn: async () => {
       const response = await fetch('/api/opencode/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ opencodeAuthJsonB64: initialAuthRef.current }),
+        body: JSON.stringify({ opencodeAuthJsonB64: opencodeAuthJsonB64 || '' }),
       });
 
       if (!response.ok) {
