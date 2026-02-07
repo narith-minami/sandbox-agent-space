@@ -196,7 +196,7 @@ export function PresetManager() {
               <CardContent className='flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between'>
                 <div>
                   <div className='font-medium'>{preset.name}</div>
-                  <div className='text-xs text-muted-foreground mt-1'>
+                  <div className='text-xs text-muted-foreground mt-1 break-all'>
                     Gist: {preset.gistUrl || 'Not set'} / Snapshot: {preset.snapshotId || 'Not set'}{' '}
                     / Workdir: {preset.workdir || 'root'}
                   </div>
