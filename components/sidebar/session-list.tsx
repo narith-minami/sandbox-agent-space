@@ -49,18 +49,15 @@ function getSessionTimestamp(session: SandboxSession): number {
 function sortGroupsByNewestSession(
   groups: Map<string, SandboxSession[]>
 ): [string, SandboxSession[]][] {
-  return Array.from(groups.entries()).sort(([, sessionsA], [, sessionsB]) => {
-    // Find the newest session in each group
-    const newestA = sessionsA.reduce((newest, session) =>
-      getSessionTimestamp(session) > getSessionTimestamp(newest) ? session : newest
-    );
-    const newestB = sessionsB.reduce((newest, session) =>
-      getSessionTimestamp(session) > getSessionTimestamp(newest) ? session : newest
-    );
+  const groupsWithTimestamp = Array.from(groups.entries()).map(([repoSlug, sessions]) => ({
+    repoSlug,
+    sessions,
+    newestTimestamp: Math.max(0, ...sessions.map(getSessionTimestamp)),
+  }));
 
-    // Sort by newest session's createdAt desc
-    return getSessionTimestamp(newestB) - getSessionTimestamp(newestA);
-  });
+  groupsWithTimestamp.sort((a, b) => b.newestTimestamp - a.newestTimestamp);
+
+  return groupsWithTimestamp.map(({ repoSlug, sessions }) => [repoSlug, sessions]);
 }
 
 export function SessionList({
@@ -94,7 +91,7 @@ export function SessionList({
       <div className={compact ? 'flex flex-col gap-2 px-1 py-3' : 'space-y-4 px-2 py-3'}>
         {sortedGroups.map(([repoSlug, repoSessions]) => {
           // Sort sessions within group by createdAt desc
-          const sortedSessions = repoSessions.sort(
+          const sortedSessions = [...repoSessions].sort(
             (a, b) => getSessionTimestamp(b) - getSessionTimestamp(a)
           );
 
