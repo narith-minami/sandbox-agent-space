@@ -16,10 +16,10 @@ set -euo pipefail
 log() { printf "[%s] %s\n" "$(date +'%H:%M:%S')" "$*"; }
 die() { log "ERROR: $*" >&2; exit 1; }
 
-REPO_URL="${REPO_URL:-https://github.com/lbose-corp/yamachiku}"
-BASE_BRANCH="${BASE_BRANCH:-staging}"
-SNAPSHOT_NAME="${SNAPSHOT_NAME:-yamachiku-staging-ready}"
-OPENCODE_VERSION="${OPENCODE_VERSION:-1.1.48}"
+REPO_URL="${REPO_URL:-}"
+BASE_BRANCH="${BASE_BRANCH:-main}"
+SNAPSHOT_NAME="${SNAPSHOT_NAME:-sandbox-main-ready}"
+OPENCODE_VERSION="${OPENCODE_VERSION:-1.1.53}"
 GH_CLI_VERSION="${GH_CLI_VERSION:-2.65.0}"
 
 log "Creating base snapshot for daily PR workflow..."
@@ -117,10 +117,8 @@ mkdir -p ~/.config/opencode
 cat > ~/.config/opencode/opencode.json << "EOF"
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "github-copilot/claude-opus-4.5",
-  "small_model": "github-copilot/gpt-4o-mini",
-  "enabled_providers": ["github-copilot"],
-  "disabled_providers": ["openai", "opencode"]
+  "model": "openai/gpt-5.3-codex",
+  "small_model": "openai/gpt-5.1-codex-mini"
 }
 EOF
 

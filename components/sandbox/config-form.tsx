@@ -1,13 +1,14 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Sparkles } from 'lucide-react';
+import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
+import { useModelOptions } from '@/hooks/use-model-options';
 import { getModelProvider } from '@/lib/constants/models';
 import { saveLastUsedValues } from '@/lib/storage';
 import type { EnvironmentPreset, UserSettings } from '@/types/sandbox';
@@ -103,7 +104,17 @@ export function ConfigForm({
   });
 
   const selectedRuntime = form.watch('runtime');
+  const opencodeAuthJsonB64 = form.watch('opencodeAuthJsonB64');
   const modelId = form.watch('modelId');
+  const {
+    data: modelOptions,
+    isError: isModelOptionsError,
+    isLoading: isModelOptionsLoading,
+  } = useModelOptions(opencodeAuthJsonB64);
+
+  const availableModels = useMemo(() => modelOptions?.models || [], [modelOptions]);
+  const hasNoAvailableModels =
+    !isModelOptionsLoading && (isModelOptionsError || availableModels.length === 0);
 
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset.id === selectedPresetId) || null,
@@ -113,12 +124,30 @@ export function ConfigForm({
   // Sync modelProvider when modelId changes
   useEffect(() => {
     if (modelId) {
-      const provider = getModelProvider(modelId);
+      const currentProvider = form.getValues('modelProvider');
+      const providerFromDynamic =
+        availableModels.find(
+          (model) => model.modelId === modelId && model.providerId === currentProvider
+        )?.providerId || availableModels.find((model) => model.modelId === modelId)?.providerId;
+      const provider = providerFromDynamic || getModelProvider(modelId);
       if (provider && provider !== form.getValues('modelProvider')) {
         form.setValue('modelProvider', provider);
       }
     }
-  }, [modelId, form]);
+  }, [availableModels, modelId, form]);
+
+  useEffect(() => {
+    if (!modelId) return;
+
+    const modelExists = availableModels.some((model) => model.modelId === modelId);
+    if (modelExists) return;
+
+    const fallbackModel = availableModels[0];
+    if (!fallbackModel) return;
+
+    form.setValue('modelId', fallbackModel.modelId);
+    form.setValue('modelProvider', fallbackModel.providerId);
+  }, [availableModels, form, modelId]);
 
   useEffect(() => {
     if (form.getValues('planSource') !== 'text') {
@@ -162,7 +191,13 @@ export function ConfigForm({
                 <RepositorySection control={form.control} setValue={form.setValue} compact />
               </div>
               <div className='min-w-0'>
-                <ModelSelector control={form.control} variant='select' />
+                <ModelSelector
+                  control={form.control}
+                  variant='select'
+                  models={availableModels}
+                  providers={modelOptions?.providers}
+                  isLoading={isModelOptionsLoading}
+                />
               </div>
               <div className='min-w-0'>
                 <EnvironmentPresetSelector
@@ -192,7 +227,7 @@ export function ConfigForm({
             <input type='hidden' {...form.register('enableCodeReview')} />
 
             <div className='pt-2'>
-              <Button type='submit' className='w-full' disabled={isLoading}>
+              <Button type='submit' className='w-full' disabled={isLoading || hasNoAvailableModels}>
                 {isLoading ? (
                   <>
                     <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -200,7 +235,9 @@ export function ConfigForm({
                   </>
                 ) : (
                   <>
-                    <span className="inline-flex items-center">Start <ArrowUp className="ml-1 h-4 w-4" /></span>
+                    <span className='inline-flex items-center'>
+                      Start <ArrowUp className='ml-1 h-4 w-4' />
+                    </span>
                     {selectedRuntime && (
                       <span className='ml-2 text-xs opacity-75'>
                         ({RUNTIME_OPTIONS.find((r) => r.value === selectedRuntime)?.label})
@@ -209,6 +246,11 @@ export function ConfigForm({
                   </>
                 )}
               </Button>
+              {hasNoAvailableModels && (
+                <p className='text-xs text-muted-foreground text-center mt-2'>
+                  Connected providers have no available models. Check OpenCode provider settings.
+                </p>
+              )}
             </div>
 
             <p className='text-xs text-muted-foreground text-center'>
