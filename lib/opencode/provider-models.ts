@@ -12,6 +12,7 @@ interface DebugInfo {
   sourceModule: string;
   connectedProviderIds: string[];
   providerModelCounts: Record<string, number>;
+  fallbackReason?: string;
 }
 
 export interface OpencodeModelsResponse {
@@ -45,11 +46,23 @@ const PROVIDER_ALIASES: Record<string, string> = {
   'github/copilot': 'github-copilot',
 };
 
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  anthropic: 'Anthropic Claude',
+  openai: 'OpenAI GPT',
+  google: 'Google Gemini',
+  'github-copilot': 'GitHub Copilot',
+};
+
 function buildFallbackResponse(reason: string): OpencodeModelsResponse {
   const models = [...ALL_MODELS];
   const providerIds = [...new Set(models.map((m) => m.providerId))];
   return {
-    providers: providerIds.map((id) => ({ id, name: id, connected: true, isDefault: false })),
+    providers: providerIds.map((id) => ({
+      id,
+      name: PROVIDER_DISPLAY_NAMES[id] || id,
+      connected: true,
+      isDefault: false,
+    })),
     models,
     source: 'fallback',
     debug: {
@@ -57,7 +70,7 @@ function buildFallbackResponse(reason: string): OpencodeModelsResponse {
       connectedProviderIds: providerIds,
       providerModelCounts: providerModelCounts(models),
       fallbackReason: reason,
-    } as DebugInfo & { fallbackReason: string },
+    },
   };
 }
 
