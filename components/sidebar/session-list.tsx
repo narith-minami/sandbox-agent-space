@@ -2,6 +2,7 @@
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePinnedGroups } from '@/hooks/use-pinned-groups';
 import { resolveRepoSlug } from '@/lib/utils';
 import type { SandboxSession } from '@/types/sandbox';
 import { RepoGroup } from './repo-group';
@@ -14,7 +15,10 @@ interface SessionListProps {
   onArchiveOptimistic?: (sessionId: string) => void;
 }
 
-function groupSessionsByRepo(sessions: SandboxSession[]): [string, SandboxSession[]][] {
+function groupSessionsByRepo(
+  sessions: SandboxSession[],
+  isPinned: (repoSlug: string) => boolean
+): [string, SandboxSession[]][] {
   const groups: Record<string, SandboxSession[]> = {};
 
   // Group sessions by repo slug
@@ -33,9 +37,20 @@ function groupSessionsByRepo(sessions: SandboxSession[]): [string, SandboxSessio
     );
   });
 
-  return Object.entries(groups).sort(([, a], [, b]) => {
-    const aLatest = Math.max(...a.map((s) => new Date(s.updatedAt || s.createdAt).getTime()));
-    const bLatest = Math.max(...b.map((s) => new Date(s.updatedAt || s.createdAt).getTime()));
+  // Sort groups: pinned first, then by latest activity
+  return Object.entries(groups).sort(([repoA], [repoB]) => {
+    const pinnedA = isPinned(repoA);
+    const pinnedB = isPinned(repoB);
+
+    if (pinnedA && !pinnedB) return -1;
+    if (!pinnedA && pinnedB) return 1;
+
+    const aLatest = Math.max(
+      ...groups[repoA].map((s) => new Date(s.updatedAt || s.createdAt).getTime())
+    );
+    const bLatest = Math.max(
+      ...groups[repoB].map((s) => new Date(s.updatedAt || s.createdAt).getTime())
+    );
     return bLatest - aLatest;
   });
 }
@@ -46,6 +61,8 @@ export function SessionList({
   compact = false,
   onArchiveOptimistic,
 }: SessionListProps) {
+  const { isPinned, togglePin } = usePinnedGroups();
+
   if (isLoading) {
     const skeletonKeys = ['s1', 's2', 's3', 's4', 's5', 's6'];
 
@@ -62,6 +79,8 @@ export function SessionList({
     return <div className='px-4 py-6 text-xs text-muted-foreground'>No sessions found</div>;
   }
 
+  const groupedSessions = groupSessionsByRepo(sessions, isPinned);
+
   return (
     <ScrollArea className='h-full'>
       <div className={compact ? 'flex flex-col gap-2 px-1 py-3' : 'space-y-2 px-2 py-3'}>
@@ -74,12 +93,14 @@ export function SessionList({
                 onArchiveOptimistic={onArchiveOptimistic}
               />
             ))
-          : groupSessionsByRepo(sessions).map(([repoSlug, repoSessions]) => (
+          : groupedSessions.map(([repoSlug, repoSessions]) => (
               <RepoGroup
                 key={repoSlug}
                 repoSlug={repoSlug}
                 sessions={repoSessions}
                 onArchiveOptimistic={onArchiveOptimistic}
+                isPinned={isPinned}
+                togglePin={togglePin}
               />
             ))}
       </div>

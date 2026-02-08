@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useCreateEnvironmentPreset,
   useDeleteEnvironmentPreset,
@@ -29,6 +30,7 @@ const formSchema = z.object({
   gistUrl: z.string(),
   snapshotId: z.string(),
   workdir: z.string(),
+  notes: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,6 +51,7 @@ export function PresetManager() {
       gistUrl: '',
       snapshotId: '',
       workdir: '',
+      notes: '',
     },
   });
 
@@ -61,6 +64,7 @@ export function PresetManager() {
       gistUrl: preset.gistUrl || '',
       snapshotId: preset.snapshotId || '',
       workdir: preset.workdir || '',
+      notes: preset.notes || '',
     });
   };
 
@@ -71,6 +75,7 @@ export function PresetManager() {
       gistUrl: '',
       snapshotId: '',
       workdir: '',
+      notes: '',
     });
   };
 
@@ -83,6 +88,7 @@ export function PresetManager() {
           gistUrl: values.gistUrl || '',
           snapshotId: values.snapshotId || '',
           workdir: values.workdir || '',
+          notes: values.notes || '',
         });
         toast.success('Preset updated');
       } else {
@@ -91,6 +97,7 @@ export function PresetManager() {
           gistUrl: values.gistUrl || '',
           snapshotId: values.snapshotId || '',
           workdir: values.workdir || '',
+          notes: values.notes || '',
         });
         toast.success('Preset created');
       }
@@ -171,6 +178,19 @@ export function PresetManager() {
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name='notes'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea placeholder='Optional notes about this preset...' {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <div className='flex flex-wrap gap-2'>
             <Button type='submit' disabled={createPreset.isPending || updatePreset.isPending}>
               {editingId ? 'Update' : 'Create'}
@@ -200,6 +220,9 @@ export function PresetManager() {
                     Gist: {preset.gistUrl || 'Not set'} / Snapshot: {preset.snapshotId || 'Not set'}{' '}
                     / Workdir: {preset.workdir || 'root'}
                   </div>
+                  {preset.notes ? (
+                    <div className='text-xs text-muted-foreground mt-1'>{preset.notes}</div>
+                  ) : null}
                 </div>
                 <div className='flex gap-2'>
                   <Button

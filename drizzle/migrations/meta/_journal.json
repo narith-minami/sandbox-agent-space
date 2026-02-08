@@ -57,13 +57,6 @@
       "when": 1770518894000,
       "tag": "0007_add_ended_at",
       "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1770544632000,
-      "tag": "0008_add_notes_to_environment_presets",
-      "breakpoints": true
     }
   ]
 }

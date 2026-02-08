@@ -78,6 +78,7 @@ export interface EnvironmentPreset {
   gistUrl: string;
   snapshotId?: string | null;
   workdir: string;
+  notes?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
