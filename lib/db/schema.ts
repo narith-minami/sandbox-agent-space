@@ -51,6 +51,7 @@ export const environmentPresets = pgTable('environment_presets', {
   gistUrl: text('gist_url').notNull(),
   snapshotId: text('snapshot_id'),
   workdir: text('workdir').notNull(),
+  notes: text('notes'), // Optional notes/memo
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

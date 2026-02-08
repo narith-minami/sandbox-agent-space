@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       gistUrl: data.gistUrl || '',
       snapshotId: data.snapshotId || '',
       workdir: data.workdir || '',
+      notes: data.notes || '',
     });
 
     return NextResponse.json(preset, { status: 201 });

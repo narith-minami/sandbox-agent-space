@@ -29,6 +29,41 @@
       "when": 1769964359585,
       "tag": "0003_breezy_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770518891000,
+      "tag": "0004_pr_status_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770518892000,
+      "tag": "0005_model_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770518893000,
+      "tag": "0006_environment_presets",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1770518894000,
+      "tag": "0007_add_ended_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770544632000,
+      "tag": "0008_add_notes_to_environment_presets",
+      "breakpoints": true
     }
   ]
 }

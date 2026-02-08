@@ -55,6 +55,7 @@ export async function PATCH(request: NextRequest, { params }: PresetRouteParams)
       gistUrl: data.gistUrl || '',
       snapshotId: data.snapshotId || '',
       workdir: data.workdir || '',
+      notes: data.notes || '',
     });
 
     if (!preset) {
