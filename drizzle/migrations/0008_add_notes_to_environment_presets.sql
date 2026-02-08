@@ -1,2 +1,0 @@
--- Migration removed: notes column already exists in database
--- Original: ALTER TABLE "environment_presets" ADD COLUMN "notes" text;

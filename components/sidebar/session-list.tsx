@@ -30,29 +30,31 @@ function groupSessionsByRepo(
     groups[repoSlug].push(session);
   });
 
-  // Sort sessions within each group by createdAt descending
+  // Sort sessions within each group by updatedAt/createdAt descending (consistent with group sorting)
   Object.keys(groups).forEach((repoSlug) => {
     groups[repoSlug].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.updatedAt || b.createdAt).getTime() -
+        new Date(a.updatedAt || a.createdAt).getTime()
     );
   });
 
   // Sort groups: pinned first, then by latest activity
-  return Object.entries(groups).sort(([repoA], [repoB]) => {
-    const pinnedA = isPinned(repoA);
-    const pinnedB = isPinned(repoB);
-
-    if (pinnedA && !pinnedB) return -1;
-    if (!pinnedA && pinnedB) return 1;
-
-    const aLatest = Math.max(
-      ...groups[repoA].map((s) => new Date(s.updatedAt || s.createdAt).getTime())
-    );
-    const bLatest = Math.max(
-      ...groups[repoB].map((s) => new Date(s.updatedAt || s.createdAt).getTime())
-    );
-    return bLatest - aLatest;
-  });
+  return Object.entries(groups)
+    .map(([repoSlug, sessions]) => ({
+      repoSlug,
+      sessions,
+      isPinned: isPinned(repoSlug),
+      latestActivity: Math.max(
+        ...sessions.map((s) => new Date(s.updatedAt || s.createdAt).getTime())
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return b.latestActivity - a.latestActivity;
+    })
+    .map(({ repoSlug, sessions }) => [repoSlug, sessions]);
 }
 
 export function SessionList({
