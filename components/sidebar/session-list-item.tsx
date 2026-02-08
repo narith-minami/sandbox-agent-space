@@ -152,6 +152,7 @@ export function SessionListItem({
   return (
     <div
       className='relative'
+      role='none'
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
