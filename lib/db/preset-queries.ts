@@ -31,6 +31,7 @@ export async function createEnvironmentPreset(data: {
   gistUrl: string;
   snapshotId?: string;
   workdir: string;
+  notes?: string;
 }): Promise<EnvironmentPreset> {
   const [preset] = await db
     .insert(environmentPresets)
@@ -40,6 +41,7 @@ export async function createEnvironmentPreset(data: {
       gistUrl: data.gistUrl,
       snapshotId: data.snapshotId || null,
       workdir: data.workdir,
+      notes: data.notes || null,
     })
     .returning();
   return preset;
@@ -52,6 +54,7 @@ export async function updateEnvironmentPreset(data: {
   gistUrl: string;
   snapshotId?: string;
   workdir: string;
+  notes?: string;
 }): Promise<EnvironmentPreset | undefined> {
   const [preset] = await db
     .update(environmentPresets)
@@ -60,6 +63,7 @@ export async function updateEnvironmentPreset(data: {
       gistUrl: data.gistUrl,
       snapshotId: data.snapshotId || null,
       workdir: data.workdir,
+      notes: data.notes || null,
       updatedAt: new Date(),
     })
     .where(

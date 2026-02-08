@@ -217,6 +217,7 @@ export const EnvironmentPresetSchema = z.object({
     .refine((val) => !val || !val.startsWith('/'), 'Absolute paths are not allowed')
     .optional()
     .default(''),
+  notes: z.string().optional().default(''),
 });
 
 export type EnvironmentPresetParams = z.infer<typeof EnvironmentPresetSchema>;
