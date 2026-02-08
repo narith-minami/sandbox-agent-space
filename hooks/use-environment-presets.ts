@@ -25,6 +25,7 @@ export function useCreateEnvironmentPreset() {
       gistUrl: string;
       snapshotId?: string;
       workdir: string;
+      notes?: string;
     }): Promise<EnvironmentPreset> => {
       const response = await fetch('/api/presets', {
         method: 'POST',
@@ -52,6 +53,7 @@ export function useUpdateEnvironmentPreset() {
       gistUrl: string;
       snapshotId?: string;
       workdir: string;
+      notes?: string;
     }): Promise<EnvironmentPreset> => {
       const response = await fetch(`/api/presets/${data.id}`, {
         method: 'PATCH',
@@ -61,6 +63,7 @@ export function useUpdateEnvironmentPreset() {
           gistUrl: data.gistUrl,
           snapshotId: data.snapshotId,
           workdir: data.workdir,
+          notes: data.notes,
         }),
       });
       if (!response.ok) {

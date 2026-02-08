@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useCreateEnvironmentPreset,
   useUpdateEnvironmentPreset,
@@ -47,6 +48,7 @@ export function EnvironmentPresetSelector({
   onOpenChange,
 }: EnvironmentPresetSelectorProps) {
   const [draftName, setDraftName] = useState('');
+  const [draftNotes, setDraftNotes] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const selectedPreset = useMemo(
     () => presets.find((preset) => preset.id === selectedPresetId) || null,
@@ -61,6 +63,7 @@ export function EnvironmentPresetSelector({
 
   useEffect(() => {
     setDraftName(selectedPreset?.name || '');
+    setDraftNotes(selectedPreset?.notes || '');
   }, [selectedPreset]);
 
   const handleSave = async () => {
@@ -78,6 +81,7 @@ export function EnvironmentPresetSelector({
           gistUrl: gistUrl || '',
           snapshotId: snapshotId || '',
           workdir: frontDir || '',
+          notes: draftNotes,
         });
         toast.success('Preset updated');
         setIsOpen(false);
@@ -88,6 +92,7 @@ export function EnvironmentPresetSelector({
           gistUrl: gistUrl || '',
           snapshotId: snapshotId || '',
           workdir: frontDir || '',
+          notes: draftNotes,
         });
         onSelectPreset(created.id);
         toast.success('Preset created');
@@ -150,6 +155,15 @@ export function EnvironmentPresetSelector({
               value={draftName}
               onChange={(event) => setDraftName(event.target.value)}
               placeholder='e.g. staging'
+            />
+          </div>
+          <div className='space-y-2'>
+            <div className='text-sm font-medium'>Notes</div>
+            <Textarea
+              value={draftNotes}
+              onChange={(event) => setDraftNotes(event.target.value)}
+              placeholder='Optional notes about this preset...'
+              className='min-h-[80px]'
             />
           </div>
           <div className='space-y-3 rounded-xl border bg-muted/30 p-4'>
