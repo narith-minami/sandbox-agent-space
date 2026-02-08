@@ -1,5 +1,5 @@
 import { createOpencode, type Auth as OpencodeAuth } from '@opencode-ai/sdk';
-import type { ModelConfig } from '@/lib/constants/models';
+import { ALL_MODELS, type ModelConfig } from '@/lib/constants/models';
 
 interface ProviderRecord {
   id: string;
@@ -17,7 +17,7 @@ interface DebugInfo {
 export interface OpencodeModelsResponse {
   providers: ProviderRecord[];
   models: ModelConfig[];
-  source: 'sdk';
+  source: 'sdk' | 'fallback';
   debug: DebugInfo;
 }
 
@@ -45,16 +45,21 @@ const PROVIDER_ALIASES: Record<string, string> = {
   'github/copilot': 'github-copilot',
 };
 
-const EMPTY_RESPONSE: OpencodeModelsResponse = {
-  providers: [],
-  models: [],
-  source: 'sdk',
-  debug: {
-    sourceModule: '@opencode-ai/sdk',
-    connectedProviderIds: [],
-    providerModelCounts: {},
-  },
-};
+function buildFallbackResponse(reason: string): OpencodeModelsResponse {
+  const models = [...ALL_MODELS];
+  const providerIds = [...new Set(models.map((m) => m.providerId))];
+  return {
+    providers: providerIds.map((id) => ({ id, name: id, connected: true, isDefault: false })),
+    models,
+    source: 'fallback',
+    debug: {
+      sourceModule: 'static-fallback',
+      connectedProviderIds: providerIds,
+      providerModelCounts: providerModelCounts(models),
+      fallbackReason: reason,
+    } as DebugInfo & { fallbackReason: string },
+  };
+}
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return Promise.race([
@@ -186,7 +191,8 @@ export async function getConnectedProviderModels(
 
     const providerData = providerListResponse.data as SdkProviderData | undefined;
     if (!providerData) {
-      return EMPTY_RESPONSE;
+      console.warn('[OpenCode] SDK returned no provider data, using static fallback');
+      return buildFallbackResponse('SDK returned no provider data');
     }
 
     const allProviders = providerData.all || [];
@@ -218,6 +224,11 @@ export async function getConnectedProviderModels(
       })
     );
 
+    if (models.length === 0) {
+      console.warn('[OpenCode] SDK returned 0 models, using static fallback');
+      return buildFallbackResponse('SDK returned 0 models from connected providers');
+    }
+
     return {
       providers,
       models,
@@ -229,8 +240,9 @@ export async function getConnectedProviderModels(
       },
     };
   } catch (error) {
-    console.error('[OpenCode] Failed to get connected provider models:', error);
-    return EMPTY_RESPONSE;
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn('[OpenCode] SDK failed, using static fallback:', message);
+    return buildFallbackResponse(message);
   } finally {
     if (server) {
       try {

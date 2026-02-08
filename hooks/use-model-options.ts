@@ -11,7 +11,7 @@ export interface ConnectedProvider {
 export interface ModelOptionsResponse {
   providers: ConnectedProvider[];
   models: ModelConfig[];
-  source: 'sdk';
+  source: 'sdk' | 'fallback';
   debug: {
     sourceModule: string;
     connectedProviderIds: string[];
