@@ -41,7 +41,13 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 
-.ai-review-config.json
 
 # Gist clone (編集用・本リポジトリのgit管理外)
 /scripts/gist-integrated-review-workflow
+
+# for ai review
+/ai-review-results
+
+scripts/review-tools/analyze-review.js
+
+.ai-review-config.json
