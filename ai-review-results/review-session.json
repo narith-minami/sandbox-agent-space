@@ -1,0 +1,310 @@
+{
+  "info": {
+    "id": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+    "slug": "cosmic-cactus",
+    "version": "1.1.53",
+    "projectID": "859505be5e15a503c53f350bb1daa04fee4c4a51",
+    "directory": "/vercel/sandbox/repo",
+    "title": "Code reviewer workflow guidance",
+    "permission": [
+      {
+        "permission": "question",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "plan_enter",
+        "pattern": "*",
+        "action": "deny"
+      },
+      {
+        "permission": "plan_exit",
+        "pattern": "*",
+        "action": "deny"
+      }
+    ],
+    "time": {
+      "created": 1770637118537,
+      "updated": 1770637118598
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "id": "msg_c42324c81001zbnd2HWIUPUETg",
+        "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+        "role": "user",
+        "time": {
+          "created": 1770637118593
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "openai",
+          "modelID": "gpt-5.1-codex-mini"
+        }
+      },
+      "parts": [
+        {
+          "id": "prt_c42324c82001JUGfkTPtP3V7zx",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42324c81001zbnd2HWIUPUETg",
+          "type": "subtask",
+          "prompt": "You are a code reviewer. Your job is to review code changes and provide actionable feedback.\n\n---\n\nInput: \n\n\n---\n\n## Determining What to Review\n\nBased on the input provided, determine which type of review to perform:\n\n1. **No arguments (default)**: Review all uncommitted changes\n   - Run: `git diff` for unstaged changes\n   - Run: `git diff --cached` for staged changes\n   - Run: `git status --short` to identify untracked (net new) files\n\n2. **Commit hash** (40-char SHA or short hash): Review that specific commit\n   - Run: `git show \n`\n\n3. **Branch name**: Compare current branch to the specified branch\n   - Run: `git diff \n...HEAD`\n\n4. **PR URL or number** (contains \"github.com\" or \"pull\" or looks like a PR number): Review the pull request\n   - Run: `gh pr view \n` to get PR context\n   - Run: `gh pr diff \n` to get the diff\n\nUse best judgement when processing input.\n\n---\n\n## Gathering Context\n\n**Diffs alone are not enough.** After getting the diff, read the entire file(s) being modified to understand the full context. Code that looks wrong in isolation may be correct given surrounding logic—and vice versa.\n\n- Use the diff to identify which files changed\n- Use `git status --short` to identify untracked files, then read their full contents\n- Read the full file to understand existing patterns, control flow, and error handling\n- Check for existing style guide or conventions files (CONVENTIONS.md, AGENTS.md, .editorconfig, etc.)\n\n---\n\n## What to Look For\n\n**Bugs** - Your primary focus.\n- Logic errors, off-by-one mistakes, incorrect conditionals\n- If-else guards: missing guards, incorrect branching, unreachable code paths\n- Edge cases: null/empty/undefined inputs, error conditions, race conditions\n- Security issues: injection, auth bypass, data exposure\n- Broken error handling that swallows failures, throws unexpectedly or returns error types that are not caught.\n\n**Structure** - Does the code fit the codebase?\n- Does it follow existing patterns and conventions?\n- Are there established abstractions it should use but doesn't?\n- Excessive nesting that could be flattened with early returns or extraction\n\n**Performance** - Only flag if obviously problematic.\n- O(n²) on unbounded data, N+1 queries, blocking I/O on hot paths\n\n---\n\n## Before You Flag Something\n\n**Be certain.** If you're going to call something a bug, you need to be confident it actually is one.\n\n- Only review the changes - do not review pre-existing code that wasn't modified\n- Don't flag something as a bug if you're unsure - investigate first\n- Don't invent hypothetical problems - if an edge case matters, explain the realistic scenario where it breaks\n- If you need more context to be sure, use the tools below to get it\n\n**Don't be a zealot about style.** When checking code against conventions:\n\n- Verify the code is *actually* in violation. Don't complain about else statements if early returns are already being used correctly.\n- Some \"violations\" are acceptable when they're the simplest option. A `let` statement is fine if the alternative is convoluted.\n- Excessive nesting is a legitimate concern regardless of other style choices.\n- Don't flag style preferences as issues unless they clearly violate established project conventions.\n\n---\n\n## Tools\n\nUse these to inform your review:\n\n- **Explore agent** - Find how existing code handles similar problems. Check patterns, conventions, and prior art before claiming something doesn't fit.\n- **Exa Code Context** - Verify correct usage of libraries/APIs before flagging something as wrong.\n- **Exa Web Search** - Research best practices if you're unsure about a pattern.\n\nIf you're uncertain about something and can't verify it with these tools, say \"I'm not sure about X\" rather than flagging it as a definite issue.\n\n---\n\n## Output\n\n1. If there is a bug, be direct and clear about why it is a bug.\n2. Clearly communicate severity of issues. Do not overstate severity.\n3. Critiques should clearly and explicitly communicate the scenarios, environments, or inputs that are necessary for the bug to arise. The comment should immediately indicate that the issue's severity depends on these factors.\n4. Your tone should be matter-of-fact and not accusatory or overly positive. It should read as a helpful AI assistant suggestion without sounding too much like a human reviewer.\n5. Write so the reader can quickly understand the issue without reading too closely.\n6. AVOID flattery, do not give any comments that are not helpful to the reader. Avoid phrasing like \"Great job ...\", \"Thanks for ...\".",
+          "description": "review changes [commit|branch|pr], defaults to uncommitted",
+          "agent": "build",
+          "model": {
+            "providerID": "openai",
+            "modelID": "gpt-5.1-codex-mini"
+          },
+          "command": "review"
+        }
+      ]
+    },
+    {
+      "info": {
+        "id": "msg_c42324c8f0017LyVJEISK0qZQm",
+        "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+        "role": "assistant",
+        "time": {
+          "created": 1770637118607,
+          "completed": 1770637134928
+        },
+        "parentID": "msg_c42324c81001zbnd2HWIUPUETg",
+        "modelID": "gpt-5.1-codex-mini",
+        "providerID": "openai",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/vercel/sandbox/repo",
+          "root": "/vercel/sandbox/repo"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "finish": "tool-calls"
+      },
+      "parts": [
+        {
+          "id": "prt_c42324c91001VcZeaEumwEhhZ5",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42324c8f0017LyVJEISK0qZQm",
+          "type": "tool",
+          "callID": "01KH134K4H4QE0F2H8FVPJCMSA",
+          "tool": "task",
+          "state": {
+            "status": "completed",
+            "input": {
+              "prompt": "You are a code reviewer. Your job is to review code changes and provide actionable feedback.\n\n---\n\nInput: \n\n\n---\n\n## Determining What to Review\n\nBased on the input provided, determine which type of review to perform:\n\n1. **No arguments (default)**: Review all uncommitted changes\n   - Run: `git diff` for unstaged changes\n   - Run: `git diff --cached` for staged changes\n   - Run: `git status --short` to identify untracked (net new) files\n\n2. **Commit hash** (40-char SHA or short hash): Review that specific commit\n   - Run: `git show \n`\n\n3. **Branch name**: Compare current branch to the specified branch\n   - Run: `git diff \n...HEAD`\n\n4. **PR URL or number** (contains \"github.com\" or \"pull\" or looks like a PR number): Review the pull request\n   - Run: `gh pr view \n` to get PR context\n   - Run: `gh pr diff \n` to get the diff\n\nUse best judgement when processing input.\n\n---\n\n## Gathering Context\n\n**Diffs alone are not enough.** After getting the diff, read the entire file(s) being modified to understand the full context. Code that looks wrong in isolation may be correct given surrounding logic—and vice versa.\n\n- Use the diff to identify which files changed\n- Use `git status --short` to identify untracked files, then read their full contents\n- Read the full file to understand existing patterns, control flow, and error handling\n- Check for existing style guide or conventions files (CONVENTIONS.md, AGENTS.md, .editorconfig, etc.)\n\n---\n\n## What to Look For\n\n**Bugs** - Your primary focus.\n- Logic errors, off-by-one mistakes, incorrect conditionals\n- If-else guards: missing guards, incorrect branching, unreachable code paths\n- Edge cases: null/empty/undefined inputs, error conditions, race conditions\n- Security issues: injection, auth bypass, data exposure\n- Broken error handling that swallows failures, throws unexpectedly or returns error types that are not caught.\n\n**Structure** - Does the code fit the codebase?\n- Does it follow existing patterns and conventions?\n- Are there established abstractions it should use but doesn't?\n- Excessive nesting that could be flattened with early returns or extraction\n\n**Performance** - Only flag if obviously problematic.\n- O(n²) on unbounded data, N+1 queries, blocking I/O on hot paths\n\n---\n\n## Before You Flag Something\n\n**Be certain.** If you're going to call something a bug, you need to be confident it actually is one.\n\n- Only review the changes - do not review pre-existing code that wasn't modified\n- Don't flag something as a bug if you're unsure - investigate first\n- Don't invent hypothetical problems - if an edge case matters, explain the realistic scenario where it breaks\n- If you need more context to be sure, use the tools below to get it\n\n**Don't be a zealot about style.** When checking code against conventions:\n\n- Verify the code is *actually* in violation. Don't complain about else statements if early returns are already being used correctly.\n- Some \"violations\" are acceptable when they're the simplest option. A `let` statement is fine if the alternative is convoluted.\n- Excessive nesting is a legitimate concern regardless of other style choices.\n- Don't flag style preferences as issues unless they clearly violate established project conventions.\n\n---\n\n## Tools\n\nUse these to inform your review:\n\n- **Explore agent** - Find how existing code handles similar problems. Check patterns, conventions, and prior art before claiming something doesn't fit.\n- **Exa Code Context** - Verify correct usage of libraries/APIs before flagging something as wrong.\n- **Exa Web Search** - Research best practices if you're unsure about a pattern.\n\nIf you're uncertain about something and can't verify it with these tools, say \"I'm not sure about X\" rather than flagging it as a definite issue.\n\n---\n\n## Output\n\n1. If there is a bug, be direct and clear about why it is a bug.\n2. Clearly communicate severity of issues. Do not overstate severity.\n3. Critiques should clearly and explicitly communicate the scenarios, environments, or inputs that are necessary for the bug to arise. The comment should immediately indicate that the issue's severity depends on these factors.\n4. Your tone should be matter-of-fact and not accusatory or overly positive. It should read as a helpful AI assistant suggestion without sounding too much like a human reviewer.\n5. Write so the reader can quickly understand the issue without reading too closely.\n6. AVOID flattery, do not give any comments that are not helpful to the reader. Avoid phrasing like \"Great job ...\", \"Thanks for ...\".",
+              "description": "review changes [commit|branch|pr], defaults to uncommitted",
+              "subagent_type": "build",
+              "command": "review"
+            },
+            "output": "task_id: ses_3bdcdb35dffeIonRwqp1Hb8eEK (for resuming to continue this task if needed)\n\n<task_result>\n- No staged or unstaged diffs were found (`git diff` and `git diff --cached` are both empty), so there is nothing to review.\n- The only untracked item is `ai-review-results/` (contains `code-review.log`), which appears unrelated to the source—no code changes exist for review.\n</task_result>",
+            "title": "review changes [commit|branch|pr], defaults to uncommitted",
+            "metadata": {
+              "summary": [
+                {
+                  "id": "prt_c42325cb4001Eot51aLMnHfaDu",
+                  "tool": "bash",
+                  "state": {
+                    "status": "completed",
+                    "title": "Show working tree status"
+                  }
+                },
+                {
+                  "id": "prt_c42325cdd00121XzqFHEkxqeT0",
+                  "tool": "bash",
+                  "state": {
+                    "status": "completed",
+                    "title": "Show unstaged diff"
+                  }
+                },
+                {
+                  "id": "prt_c42325ce5001mDvDM6p4IHE26i",
+                  "tool": "bash",
+                  "state": {
+                    "status": "completed",
+                    "title": "Show staged diff"
+                  }
+                },
+                {
+                  "id": "prt_c42326466001cKjbsD71dNY0Ds",
+                  "tool": "bash",
+                  "state": {
+                    "status": "completed",
+                    "title": "Show unstaged diff"
+                  }
+                },
+                {
+                  "id": "prt_c42326b8000186vEDaR2nIXNZg",
+                  "tool": "bash",
+                  "state": {
+                    "status": "completed",
+                    "title": "Show staged diff"
+                  }
+                },
+                {
+                  "id": "prt_c423275ae001DmgAmPeL0SEbvX",
+                  "tool": "glob",
+                  "state": {
+                    "status": "completed",
+                    "title": ""
+                  }
+                },
+                {
+                  "id": "prt_c42327db4001GpHF4c1FN8zQMR",
+                  "tool": "read",
+                  "state": {
+                    "status": "completed",
+                    "title": "ai-review-results/code-review.log"
+                  }
+                }
+              ],
+              "sessionId": "ses_3bdcdb35dffeIonRwqp1Hb8eEK",
+              "model": {
+                "modelID": "gpt-5.1-codex-mini",
+                "providerID": "openai"
+              },
+              "truncated": false
+            },
+            "time": {
+              "start": 1770637118609,
+              "end": 1770637134929
+            }
+          }
+        }
+      ]
+    },
+    {
+      "info": {
+        "id": "msg_c42328c51001nvENDlfOf5GVsn",
+        "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+        "role": "user",
+        "time": {
+          "created": 1770637134929
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "openai",
+          "modelID": "gpt-5.1-codex-mini"
+        }
+      },
+      "parts": [
+        {
+          "id": "prt_c42328c52001fv5l6WmKRe2KB3",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c51001nvENDlfOf5GVsn",
+          "type": "text",
+          "text": "Summarize the task tool output above and continue with your task.",
+          "synthetic": true
+        }
+      ]
+    },
+    {
+      "info": {
+        "id": "msg_c42328c540013CgOyAZ4Y5iSN1",
+        "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+        "role": "assistant",
+        "time": {
+          "created": 1770637134932,
+          "completed": 1770637138721
+        },
+        "parentID": "msg_c42328c51001nvENDlfOf5GVsn",
+        "modelID": "gpt-5.1-codex-mini",
+        "providerID": "openai",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/vercel/sandbox/repo",
+          "root": "/vercel/sandbox/repo"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 11521,
+          "output": 139,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "finish": "stop"
+      },
+      "parts": [
+        {
+          "id": "prt_c42328e98001AlvrvczL5BDaYs",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c540013CgOyAZ4Y5iSN1",
+          "type": "step-start",
+          "snapshot": "e19fc77323cccd8f4aee2d50aac0f9ae8b688004"
+        },
+        {
+          "id": "prt_c42329718001Bym9zpXLjYjcTE",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c540013CgOyAZ4Y5iSN1",
+          "type": "reasoning",
+          "text": "",
+          "metadata": {
+            "openai": {
+              "itemId": "rs_010be76a5ae702ca016989c751a3f481918d4c6d8f3413685d",
+              "reasoningEncryptedContent": "gAAAAABpicdRx__jfSaRGWdGUffCBzRmtBwdHTB_mPLGQjmfcI5ogrvA4A_l11_tefU-GeHWb7YTpXJd2Ef_zaX3nosgGNsCZ3T54nsP1W7auvL4WBmVRPG3DbYqwAkgw-A4zKb9g3jmAPrd7dg9pjd_1R2APzH8ee0JHj8B67-pYtDGizO_fT2iVLzZswvry7ymRJdhKwX5SzFPiHPEnVu6UIA3StlTu7aBuBVVJMgLtuPARgSPkTeE779iIdPq2V7czyZ3HxfLd8RFp1cRWyOgcrSy0U1wTOWlj0t8zQJVoQfjql1SJRxF84yvMiPPYUruuyBASRCSlMbkJZ_Eaxf9cJun5gZZk2OBIYpchUbAWTyBpPPpIoUQMHWpYdts62sCuxdHQeb_uSBsBuEHmaNqApw-FtXVHwcnGXrvdKjIJaVRyTQutQqb5AeQiHRCZYbOntUzLABkdDcL5q1CTdr0KtK5U7bk8vaLmDyP0DE3FVuBRV0UumoCvSTTvoynfSZIjvWPqFK1HRFrriS-Owj4bQ5hmBm4AWCFf-m7eqGpT1cxvwsENVjD62rfKj5FvocZRr2J9yAg4Yjjde5bSNUZZdKorXHJelXv_rQ0uZ5jI0FW7pNnl-uMKUKzRjtK2lnwbmY1E2YA3SG9n_S3tfjn0kYTYz1CgLAaKqMPuMtmv1xLT_g8VRqCNPjEwTHb8QDmlsoX9Dah4dBk6Hh_aq2y3NPcOUrINA50Imb_6K_webGkz_nTqTIDomAug92RM3WXlpsph8x6K1wrP7Gbnec3SXAD4AMw9y6Ag3wtaVGn1mS6m6wdm3HQpQ4y1ADg3NLw7sh8PN33hgxNpZHZuHO-W-XqZlqeGJHPbga_JR5Yc3X-y2Peh9fxoev3LoHPfHUcf-WkW34K28PnbY4LeeBaK5DzvPwLXJ7BMJG-fvEmfZH4OrJzqHah1IK8E-8nZrv35r9Ya0cn4C5sj2c6XOrq9g2MEfNPVGstMSPTPg1HvvuMOvnNPklhW8TLd1KA0cqD2owOZc8vtmm23bm1ygnB4SHXZ5lhRiMBxvpPnSeZ02ilAwIbpIo="
+            }
+          },
+          "time": {
+            "start": 1770637137688,
+            "end": 1770637138041
+          }
+        },
+        {
+          "id": "prt_c4232987a001Wb8KIgLmWId0tc",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c540013CgOyAZ4Y5iSN1",
+          "type": "text",
+          "text": "- The review task checked for diffs and found none—`git diff`/`--cached` were empty, so no modified code exists to analyze.\n- There’s an untracked `ai-review-results/` directory (just `code-review.log`), but it doesn’t contain source changes, so nothing to review there.\n- With no code differences, there’s nothing further to review right now; let me know if you want to add or point me at specific changes.",
+          "time": {
+            "start": 1770637138694,
+            "end": 1770637138694
+          },
+          "metadata": {
+            "openai": {
+              "itemId": "msg_010be76a5ae702ca016989c751fbe48191b52d9632b37e6ff6"
+            }
+          }
+        },
+        {
+          "id": "prt_c42329b17001Ooi73NPLM5UuFV",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c540013CgOyAZ4Y5iSN1",
+          "type": "step-finish",
+          "reason": "stop",
+          "snapshot": "3c65487f93f4f591ef0cac74e41c0f6c86c107fc",
+          "cost": 0,
+          "tokens": {
+            "input": 11521,
+            "output": 139,
+            "reasoning": 0,
+            "cache": {
+              "read": 0,
+              "write": 0
+            }
+          }
+        },
+        {
+          "id": "prt_c42329b1f001VrvhrcIljSj2Vi",
+          "sessionID": "ses_3bdcdb3b6ffeBNsvAMuFFbgx27",
+          "messageID": "msg_c42328c540013CgOyAZ4Y5iSN1",
+          "type": "patch",
+          "hash": "e19fc77323cccd8f4aee2d50aac0f9ae8b688004",
+          "files": ["/vercel/sandbox/repo/ai-review-results/code-review.log"]
+        }
+      ]
+    }
+  ]
+}
